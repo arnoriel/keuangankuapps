@@ -11,10 +11,16 @@ export default function BottomNav({ onFabClick }: BottomNavProps) {
   const pathname = usePathname();
   const router = useRouter();
 
+  // next.config.ts pakai trailingSlash: true, jadi pathname bisa berupa
+  // '/app/' ATAU '/app' tergantung environment (dev vs static export).
+  // Normalisasi dulu biar perbandingan path selalu konsisten.
+  const normalizedPath = pathname.length > 1 ? pathname.replace(/\/$/, '') : pathname;
+  const isActive = (path: string) => normalizedPath === path;
+
   return (
     <nav className="bottom-nav">
       <button
-        className={`nav-btn ${pathname === '/app' ? 'active' : ''}`}
+        className={`nav-btn ${isActive('/app') ? 'active' : ''}`}
         onClick={() => router.push('/app')}
         aria-label="Beranda"
       >
@@ -23,7 +29,7 @@ export default function BottomNav({ onFabClick }: BottomNavProps) {
       </button>
 
       <button
-        className={`nav-btn ${pathname === '/app/analytics' ? 'active' : ''}`}
+        className={`nav-btn ${isActive('/app/analytics') ? 'active' : ''}`}
         onClick={() => router.push('/app/analytics')}
         aria-label="Analitik"
       >
@@ -38,7 +44,7 @@ export default function BottomNav({ onFabClick }: BottomNavProps) {
       </div>
 
       <button
-        className={`nav-btn ${pathname === '/app/calculator' ? 'active' : ''}`}
+        className={`nav-btn ${isActive('/app/calculator') ? 'active' : ''}`}
         onClick={() => router.push('/app/calculator')}
         aria-label="Kalkulator"
       >
@@ -47,7 +53,7 @@ export default function BottomNav({ onFabClick }: BottomNavProps) {
       </button>
 
       <button
-        className={`nav-btn ${pathname === '/app/menu' ? 'active' : ''}`}
+        className={`nav-btn ${isActive('/app/menu') ? 'active' : ''}`}
         onClick={() => router.push('/app/menu')}
         aria-label="Menu"
       >

@@ -36,7 +36,17 @@
   position: relative;
 }
 
-.nav-btn i { font-size: 19px; transition: transform 0.2s ease; }
+.nav-btn i {
+  font-size: 19px;
+  transition: transform 0.2s ease, color 0.2s ease;
+  width: 40px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  transition: all 0.25s cubic-bezier(0.34, 1.2, 0.64, 1);
+}
 
 .nav-btn span {
   font-size: 10px;
@@ -50,17 +60,34 @@
   color: var(--brand);
 }
 
+.nav-btn.active i {
+  background: var(--brand-subtle);
+  color: var(--brand);
+  transform: translateY(-1px);
+}
+
+.nav-btn.active span {
+  color: var(--brand);
+  font-weight: 700;
+}
+
 /* active pip indicator — di bawah label */
 .nav-btn.active::after {
   content: '';
   position: absolute;
-  bottom: 2px;
+  bottom: 1px;
   left: 50%;
   transform: translateX(-50%);
-  width: 20px;
+  width: 22px;
   height: 3px;
   background: var(--brand);
   border-radius: 3px 3px 0 0;
+  animation: navPipIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes navPipIn {
+  from { width: 0; opacity: 0; }
+  to   { width: 22px; opacity: 1; }
 }
 
 .nav-btn:active i { transform: scale(0.88); }
