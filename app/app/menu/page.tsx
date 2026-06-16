@@ -7,6 +7,7 @@ import { isBiometricActive, isBiometricCapable, removeWebAuthn } from '@/lib/sec
 import ChangePinSheet from '@/components/ChangePinSheet';
 import BiometricSheet from '@/components/BiometricSheet';
 import HelpSheet from '@/components/HelpSheet';
+import ExportSheet from '@/components/ExportSheet';
 
 type SaveStatus = 'idle' | 'saving' | 'saved';
 
@@ -19,6 +20,7 @@ export default function MenuPage() {
   const [showChangePin, setShowChangePin] = useState(false);
   const [showBiometricSheet, setShowBiometricSheet] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [showExport, setShowExport] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -170,6 +172,19 @@ export default function MenuPage() {
         <div className="menu-section-label">Lainnya</div>
 
         <div className="menu-list">
+          <button className="menu-item" onClick={() => setShowExport(true)}>
+            <div className="menu-item-icon menu-item-icon-green">
+              <i className="fa-solid fa-file-export" />
+            </div>
+            <div className="menu-item-body">
+              <div className="menu-item-title">Export Laporan Keuangan</div>
+              <div className="menu-item-sub">Unduh laporan lengkap dalam bentuk PDF</div>
+            </div>
+            <i className="fa-solid fa-chevron-right menu-item-chevron" />
+          </button>
+
+          <div className="menu-divider" />
+
           <button className="menu-item" onClick={() => setShowHelp(true)}>
             <div className="menu-item-icon menu-item-icon-amber">
               <i className="fa-solid fa-circle-question" />
@@ -203,6 +218,10 @@ export default function MenuPage() {
 
       {showHelp && (
         <HelpSheet onClose={() => setShowHelp(false)} />
+      )}
+
+      {showExport && (
+        <ExportSheet onClose={() => setShowExport(false)} />
       )}
     </>
   );
