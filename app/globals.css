@@ -1,0 +1,193 @@
+/* ===================================================
+   KEUANGANKU — Global Styles (Redesign 2.0)
+   =================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap');
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+:root {
+  --font: 'Plus Jakarta Sans', 'Outfit', system-ui, -apple-system, sans-serif;
+
+  /* === CORE PALETTE === */
+  /* Page bg — very slightly warm white, not flat */
+  --bg-page:       #F6F7FB;
+  --bg-card:       #FFFFFF;
+  --bg-card-2:     #F1F3FA;
+  --bg-elevated:   #E8ECF4;
+  --bg-modal:      #FFFFFF;
+  --bg-input:      #F1F3FA;
+
+  /* Brand — vivid teal/emerald replaces generic orange */
+  --brand:          #5B6AF0;
+  --brand-dark:     #3A47C7;
+  --brand-light:    #7A87FF;
+  --brand-glow:     rgba(91, 106, 240, 0.28);
+  --brand-subtle:   rgba(91, 106, 240, 0.09);
+
+  /* Accent — warm coral for income/positive actions */
+  --accent:         #FF6B6B;
+  --accent-dark:    #D94444;
+  --accent-glow:    rgba(255, 107, 107, 0.28);
+
+  /* Green — income & positive */
+  --green:          #10B981;
+  --green-dark:     #059669;
+  --green-light:    #34D399;
+  --green-glow:     rgba(16, 185, 129, 0.22);
+  --green-subtle:   rgba(16, 185, 129, 0.09);
+
+  /* Red — expense & negative */
+  --red:            #EF4444;
+  --red-dark:       #DC2626;
+  --red-glow:       rgba(239, 68, 68, 0.22);
+  --red-subtle:     rgba(239, 68, 68, 0.09);
+
+  /* Wallet card — deep navy gradients */
+  --card-green-a:   #0EA070;
+  --card-green-b:   #065F46;
+  --card-blue-a:    #5B6AF0;
+  --card-blue-b:    #2D3ABF;
+
+  /* Text */
+  --text-1:   #111827;
+  --text-2:   #374151;
+  --text-3:   #6B7280;
+  --text-4:   #9CA3AF;
+  --text-inv: #FFFFFF;
+
+  /* Borders */
+  --border:       rgba(0, 0, 0, 0.07);
+  --border-2:     rgba(0, 0, 0, 0.11);
+  --border-focus: rgba(91, 106, 240, 0.45);
+
+  /* Radius */
+  --r-xs:  8px;
+  --r-sm:  12px;
+  --r-md:  16px;
+  --r-lg:  20px;
+  --r-xl:  24px;
+  --r-2xl: 32px;
+  --r-3xl: 40px;
+
+  /* Shadows — more layered & realistic */
+  --shadow-xs:   0 1px 3px rgba(0,0,0,0.07);
+  --shadow-sm:   0 2px 8px rgba(30,40,80,0.08);
+  --shadow-md:   0 4px 16px rgba(30,40,80,0.10);
+  --shadow-lg:   0 8px 28px rgba(30,40,80,0.12);
+  --shadow-fab:  0 8px 28px rgba(91, 106, 240, 0.40);
+  --shadow-nav:  0 -1px 0 rgba(0,0,0,0.06), 0 -8px 24px rgba(30,40,80,0.07);
+  --shadow-card-green: 0 10px 32px rgba(14, 160, 112, 0.32);
+  --shadow-card-blue:  0 10px 32px rgba(91, 106, 240, 0.32);
+}
+
+/* =====================
+   RESET & BASE
+   ===================== */
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font);
+  background: var(--bg-page);
+  color: var(--text-1);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  min-height: 100dvh;
+  background-image:
+    radial-gradient(ellipse 700px 500px at 60% -80px, rgba(91,106,240,0.06) 0%, transparent 70%),
+    radial-gradient(ellipse 500px 400px at 0% 70%, rgba(16,185,129,0.04) 0%, transparent 60%);
+  background-attachment: fixed;
+}
+
+button { cursor: pointer; font-family: var(--font); border: none; }
+input  { font-family: var(--font); }
+a      { text-decoration: none; color: inherit; }
+
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--bg-elevated); border-radius: 2px; }
+
+/* =====================
+   APP ROOT & LAYOUT
+   ===================== */
+.app-root {
+  width: 100%;
+  max-width: 100vw;
+  min-height: 100dvh;
+  position: relative;
+  overflow-x: hidden;
+}
+
+.page {
+  min-height: 100dvh;
+  padding-bottom: 96px;
+  overflow-y: auto;
+}
+
+/* =====================
+   SHARED ANIMATIONS
+   ===================== */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateX(-50%) translateY(100%); }
+  to   { transform: translateX(-50%) translateY(0); }
+}
+
+@keyframes bounceIn {
+  0%   { opacity: 0; transform: scale(0.4); }
+  70%  { transform: scale(1.08); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(0.85); }
+}
+
+/* =====================
+   SHARED CHIP / BADGE
+   ===================== */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.chip-green { background: var(--green-subtle); color: var(--green-dark); }
+.chip-red   { background: var(--red-subtle);   color: var(--red-dark);   }
+.chip-brand { background: var(--brand-subtle); color: var(--brand-dark); }
+
+
+/* ===== LockScreen shake animation ===== */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  15%       { transform: translateX(-8px); }
+  30%       { transform: translateX(8px); }
+  45%       { transform: translateX(-6px); }
+  60%       { transform: translateX(6px); }
+  75%       { transform: translateX(-4px); }
+  90%       { transform: translateX(4px); }
+}

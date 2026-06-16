@@ -1,0 +1,78 @@
+/* =====================
+   TRANSACTION ITEM
+   ===================== */
+.tx-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 13px 15px;
+  box-shadow: var(--shadow-xs);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  cursor: default;
+}
+
+.tx-item:active { transform: scale(0.978); box-shadow: none; }
+
+.tx-icon-cat {
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+.tx-info { flex: 1; min-width: 0; }
+
+.tx-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -0.1px;
+}
+
+.tx-subtitle {
+  font-size: 11px;
+  color: var(--text-4);
+  margin-top: 2px;
+  font-weight: 500;
+}
+
+.tx-amount {
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  flex-shrink: 0;
+}
+
+.tx-amount-positive     { color: var(--green-dark); }
+.tx-amount-negative     { color: var(--red-dark); }
+.tx-amount-transfer-out { color: var(--brand); }
+
+/* =====================
+   TAPPABLE (EDIT/DELETE)
+   ===================== */
+.tx-item-clickable {
+  cursor: pointer;
+}
+
+.tx-item-clickable:active {
+  transform: scale(0.978);
+  background: var(--bg-card-2);
+  box-shadow: none;
+}
+
+.tx-edit-hint {
+  color: var(--text-4);
+  font-size: 12px;
+  flex-shrink: 0;
+  margin-left: 2px;
+}

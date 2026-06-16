@@ -1,0 +1,258 @@
+/* =====================
+   ANALYTICS PAGE
+   ===================== */
+.month-selector {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-card);
+  border-radius: var(--r-lg);
+  padding: 10px 14px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
+}
+
+.month-nav-btn {
+  background: var(--bg-card-2);
+  border: 1px solid var(--border);
+  width: 34px; height: 34px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-3);
+  font-size: 13px;
+  transition: all 0.15s;
+}
+.month-nav-btn:active { transform: scale(0.9); background: var(--bg-elevated); }
+
+.month-label {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-1);
+  text-transform: capitalize;
+  letter-spacing: -0.2px;
+}
+
+.analytics-section {
+  padding: 0 16px;
+  margin-bottom: 16px;
+}
+
+/* =====================
+   STAT CARDS
+   ===================== */
+.stat-card {
+  background: var(--bg-card);
+  border-radius: var(--r-lg);
+  padding: 14px 16px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
+}
+
+.stat-card-label {
+  font-size: 11px;
+  color: var(--text-4);
+  font-weight: 700;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.stat-card-amount {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-1);
+  letter-spacing: -0.5px;
+}
+
+.stat-card-income .stat-card-label i { color: var(--green); }
+.stat-card-income .stat-card-amount { color: var(--green-dark); }
+.stat-card-expense .stat-card-label i { color: var(--red); }
+.stat-card-expense .stat-card-amount { color: var(--red-dark); }
+
+.savings-rate-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 72px; height: 72px;
+  border-radius: 50%;
+}
+
+/* =====================
+   CHART CARD
+   ===================== */
+.chart-card {
+  background: var(--bg-card);
+  border-radius: var(--r-lg);
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
+  margin-top: 8px;
+}
+
+.chart-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.chart-legend {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.legend-item { display: flex; align-items: center; gap: 8px; }
+.legend-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.legend-info { flex: 1; min-width: 0; }
+
+.legend-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.legend-value { font-size: 11px; color: var(--text-4); font-weight: 500; }
+.legend-pct { font-size: 12px; font-weight: 700; color: var(--text-2); flex-shrink: 0; }
+
+/* Bar Chart */
+.bar-legend {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 12px;
+  font-size: 11px;
+  color: var(--text-3);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.bar-legend-item { display: flex; align-items: center; gap: 5px; }
+.bar-dot { width: 9px; height: 9px; border-radius: 3px; flex-shrink: 0; }
+
+.bar-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  height: 120px;
+  padding-bottom: 24px;
+  position: relative;
+}
+
+.bar-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  position: relative;
+}
+
+.bar-pair {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: calc(100% - 20px);
+  width: 100%;
+  justify-content: center;
+}
+
+.bar {
+  flex: 1;
+  max-width: 20px;
+  border-radius: 5px 5px 0 0;
+  min-height: 4px;
+  transition: height 0.4s ease;
+}
+
+.bar-income  { background: linear-gradient(180deg, var(--green-light), var(--green)); }
+.bar-expense { background: linear-gradient(180deg, #FCA5A5, var(--red)); }
+
+.bar-label {
+  position: absolute;
+  bottom: 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-4);
+  text-align: center;
+  text-transform: capitalize;
+}
+
+/* =====================
+   GOALS TEASER CARD
+   ===================== */
+.goals-teaser-card {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  padding: 16px 18px 14px;
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.goals-teaser-card:active { transform: scale(0.98); }
+
+.goals-teaser-stats {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.goals-teaser-stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.goals-teaser-num {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text-1);
+  letter-spacing: -0.4px;
+}
+
+.goals-teaser-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-4);
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.goals-teaser-divider {
+  width: 1px;
+  height: 28px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+.goals-teaser-cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--brand);
+}
+
+.goals-teaser-cta i { font-size: 12px; transition: transform 0.15s ease; }
+.goals-teaser-card:active .goals-teaser-cta i { transform: translateX(3px); }

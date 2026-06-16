@@ -1,0 +1,80 @@
+/* =====================
+   EDIT TRANSACTION SHEET
+   ===================== */
+.btn-danger-outline {
+  width: 100%;
+  padding: 14px;
+  border-radius: var(--r-xl);
+  background: var(--red-subtle);
+  color: var(--red-dark);
+  font-size: 14px;
+  font-weight: 700;
+  border: 1.5px solid rgba(239, 68, 68, 0.20);
+  transition: all 0.2s ease;
+  font-family: var(--font);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.btn-danger-outline i { font-size: 13px; }
+.btn-danger-outline:active { transform: scale(0.97); background: rgba(239, 68, 68, 0.16); }
+
+.edit-transfer-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: var(--bg-card-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 11px 13px;
+  font-size: 12px;
+  color: var(--text-3);
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+.edit-transfer-note i {
+  color: var(--brand);
+  font-size: 13px;
+  margin-top: 1px;
+  flex-shrink: 0;
+}
+
+/* =====================
+   DELETE CONFIRMATION
+   ===================== */
+.delete-confirm-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--red-subtle);
+  color: var(--red-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  margin: 8px auto 18px;
+}
+
+.delete-confirm-text {
+  font-size: 14px;
+  color: var(--text-2);
+  text-align: center;
+  line-height: 1.6;
+  margin-bottom: 6px;
+}
+
+.delete-confirm-text strong {
+  color: var(--text-1);
+}
+
+.delete-confirm-sub {
+  font-size: 12px;
+  color: var(--text-4);
+  text-align: center;
+  line-height: 1.5;
+  margin-bottom: 22px;
+}
