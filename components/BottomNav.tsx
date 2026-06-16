@@ -47,12 +47,12 @@ export default function BottomNav({ onFabClick }: BottomNavProps) {
       </button>
 
       <button
-        className={`nav-btn ${pathname === '/app/history' ? 'active' : ''}`}
-        onClick={() => router.push('/app/history')}
-        aria-label="Riwayat"
+        className={`nav-btn ${pathname === '/app/menu' ? 'active' : ''}`}
+        onClick={() => router.push('/app/menu')}
+        aria-label="Menu"
       >
-        <i className="fa-solid fa-clock-rotate-left" />
-        <span>Riwayat</span>
+        <i className="fa-solid fa-bars" />
+        <span>Menu</span>
       </button>
     </nav>
   );

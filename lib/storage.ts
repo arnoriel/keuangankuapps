@@ -19,6 +19,11 @@ export function getUserName(): string {
   catch { return ''; }
 }
 
+export function setUserName(name: string): void {
+  try { localStorage.setItem(USER_NAME_KEY, name.trim()); }
+  catch { /* noop */ }
+}
+
 export function saveOnboarding(
   name: string,
   saldoPegangan: number,

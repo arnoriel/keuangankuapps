@@ -2,6 +2,7 @@
 
 import '@/styles/home.css';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useWallet } from '@/context/WalletContext';
 import TransactionItem from '@/components/TransactionItem';
 import TransferModal from '@/components/TransferModal';
@@ -11,6 +12,7 @@ import { formatRupiah, formatRupiahShort, getGreeting, formatFullDate, getTodayD
 
 export default function DashboardPage() {
   const wallet = useWallet();
+  const router = useRouter();
   const [showTransfer, setShowTransfer] = useState(false);
   const [hideTotal, setHideTotal] = useState(false);
   const [hidePegangan, setHidePegangan] = useState(false);
@@ -169,9 +171,14 @@ export default function DashboardPage() {
       <section className="recent-section">
         <div className="section-header">
           <span className="section-label">Transaksi Terbaru</span>
-          {wallet.transactions.length > 0 && (
-            <span className="section-count">{wallet.transactions.length} total</span>
-          )}
+          <button
+            className="section-see-all"
+            onClick={() => router.push('/app/history')}
+            aria-label="Lihat semua transaksi"
+          >
+            Lihat Semua
+            <i className="fa-solid fa-chevron-right" />
+          </button>
         </div>
 
         {recentTx.length === 0 ? (

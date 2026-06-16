@@ -142,8 +142,8 @@ a      { text-decoration: none; color: inherit; }
 }
 
 @keyframes slideUp {
-  from { transform: translateX(-50%) translateY(100%); }
-  to   { transform: translateX(-50%) translateY(0); }
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
 }
 
 @keyframes bounceIn {
