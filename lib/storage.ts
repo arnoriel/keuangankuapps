@@ -5,6 +5,41 @@ import {
 
 const KEY = 'rider_wallet_v1';
 
+// ─── ONBOARDING ────────────────────────────────────────────────────────────
+const ONBOARDING_DONE_KEY = 'keuanganku_onboarding_done';
+const USER_NAME_KEY       = 'keuanganku_user_name';
+
+export function isOnboardingComplete(): boolean {
+  try { return localStorage.getItem(ONBOARDING_DONE_KEY) === 'true'; }
+  catch { return false; }
+}
+
+export function getUserName(): string {
+  try { return localStorage.getItem(USER_NAME_KEY) ?? ''; }
+  catch { return ''; }
+}
+
+export function saveOnboarding(
+  name: string,
+  saldoPegangan: number,
+  saldoTabungan: number,
+): AppState {
+  localStorage.setItem(USER_NAME_KEY, name.trim());
+  localStorage.setItem(ONBOARDING_DONE_KEY, 'true');
+
+  // Tulis saldo awal ke AppState
+  const state = getState();
+  const next: AppState = {
+    ...state,
+    saldoPegangan,
+    saldoTabungan,
+  };
+  setState(next);
+  return next;
+}
+
+// ─── STATE ─────────────────────────────────────────────────────────────────
+
 const defaultState: AppState = {
   saldoPegangan: 0,
   saldoTabungan: 0,
@@ -116,9 +151,6 @@ export function transferFunds(amount: number, from: WalletType, to: WalletType):
 
 // ─── EDIT & DELETE TRANSACTION ─────────────────────────────────────────────
 
-/**
- * Reverses the balance effect of a transaction (used before edit/delete).
- */
 function reverseTransactionEffect(state: AppState, tx: Transaction): AppState {
   switch (tx.type) {
     case 'income':
@@ -126,7 +158,6 @@ function reverseTransactionEffect(state: AppState, tx: Transaction): AppState {
     case 'expense':
       return { ...state, saldoPegangan: state.saldoPegangan + tx.amount };
     case 'transfer_in': {
-      // tx.wallet = destination wallet; the other wallet is the source.
       const dest = tx.wallet;
       const source: WalletType = dest === 'pegangan' ? 'tabungan' : 'pegangan';
       return {
@@ -142,16 +173,12 @@ function reverseTransactionEffect(state: AppState, tx: Transaction): AppState {
       };
     }
     case 'transfer_out':
-      // Not currently generated, but handle defensively (mirror of transfer_in).
       return reverseTransactionEffect(state, { ...tx, type: 'transfer_in' });
     default:
       return state;
   }
 }
 
-/**
- * Applies the balance effect of a transaction (used after edit/restore).
- */
 function applyTransactionEffect(state: AppState, tx: Transaction): AppState {
   switch (tx.type) {
     case 'income':
@@ -188,22 +215,13 @@ export interface TransactionEditData {
   date: string;
 }
 
-/**
- * Updates an existing transaction's amount/note/category/date,
- * correctly recalculating saldo by reversing the old effect and
- * applying the new one. Type & wallet remain unchanged.
- */
 export function updateTransaction(id: string, data: TransactionEditData): AppState {
   const state = getState();
   const txIndex = state.transactions.findIndex(t => t.id === id);
   if (txIndex === -1) return state;
 
   const oldTx = state.transactions[txIndex];
-
-  // 1. Reverse old effect on saldo
   let next = reverseTransactionEffect(state, oldTx);
-
-  // 2. Build updated transaction
   const updatedTx: Transaction = {
     ...oldTx,
     amount: data.amount,
@@ -212,23 +230,15 @@ export function updateTransaction(id: string, data: TransactionEditData): AppSta
     period: data.period ?? oldTx.period,
     date: data.date,
   };
-
-  // 3. Apply new effect on saldo
   next = applyTransactionEffect(next, updatedTx);
-
-  // 4. Replace transaction in list
   next = {
     ...next,
     transactions: next.transactions.map((t, i) => (i === txIndex ? updatedTx : t)),
   };
-
   setState(next);
   return next;
 }
 
-/**
- * Deletes a transaction and reverses its effect on saldo.
- */
 export function deleteTransaction(id: string): AppState {
   const state = getState();
   const tx = state.transactions.find(t => t.id === id);
@@ -239,7 +249,6 @@ export function deleteTransaction(id: string): AppState {
     ...next,
     transactions: next.transactions.filter(t => t.id !== id),
   };
-
   setState(next);
   return next;
 }

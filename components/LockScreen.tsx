@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { isOnboardingComplete, saveOnboarding } from '@/lib/storage';
 
 declare global {
   interface Window {
@@ -84,12 +85,10 @@ function isWebAuthnRegistered(): boolean {
 
 function WEBAUTHN_CRED_ID_KEY() { return WEBAUTHN_CRED_KEY; }
 
-/** Daftarkan biometrik WebAuthn (sekali, saat PIN pertama kali dibuat) */
 async function registerWebAuthn(): Promise<boolean> {
   try {
     if (!webAuthnSupported()) return false;
 
-    // Generate user id baru atau pakai yang ada
     let userId = localStorage.getItem(WEBAUTHN_USER_ID_KEY);
     if (!userId) {
       const arr = new Uint8Array(16);
@@ -111,11 +110,11 @@ async function registerWebAuthn(): Promise<boolean> {
           displayName: 'Keuanganku User',
         },
         pubKeyCredParams: [
-          { alg: -7,   type: 'public-key' }, // ES256
-          { alg: -257, type: 'public-key' }, // RS256
+          { alg: -7,   type: 'public-key' },
+          { alg: -257, type: 'public-key' },
         ],
         authenticatorSelection: {
-          authenticatorAttachment: 'platform', // pakai sensor di device (fingerprint/face)
+          authenticatorAttachment: 'platform',
           userVerification: 'required',
         },
         timeout: 60000,
@@ -124,7 +123,6 @@ async function registerWebAuthn(): Promise<boolean> {
 
     if (!credential) return false;
 
-    // Simpan credential id (base64url) untuk verifikasi nanti
     const credId = btoa(String.fromCharCode(...new Uint8Array(credential.rawId)))
       .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
     localStorage.setItem(WEBAUTHN_CRED_KEY, credId);
@@ -135,14 +133,12 @@ async function registerWebAuthn(): Promise<boolean> {
   }
 }
 
-/** Verifikasi biometrik WebAuthn */
 async function verifyWebAuthn(): Promise<boolean> {
   try {
     if (!webAuthnSupported()) return false;
     const credIdStr = localStorage.getItem(WEBAUTHN_CRED_KEY);
     if (!credIdStr) return false;
 
-    // Decode base64url → Uint8Array
     const base64 = credIdStr.replace(/-/g, '+').replace(/_/g, '/');
     const binary = atob(base64);
     const credId = new Uint8Array(binary.length);
@@ -168,7 +164,7 @@ async function verifyWebAuthn(): Promise<boolean> {
   }
 }
 
-// ─── Deteksi mode biometrik yang tersedia ─────────────────────────────────────
+// ─── Deteksi mode biometrik ───────────────────────────────────────────────────
 
 type BiometricMode = 'capacitor' | 'webauthn' | 'none';
 
@@ -178,9 +174,29 @@ async function detectBiometricMode(): Promise<BiometricMode> {
   return 'none';
 }
 
-// ─── Komponen utama ───────────────────────────────────────────────────────────
+// ─── Format Rupiah helper ─────────────────────────────────────────────────────
 
-type Mode = 'unlock' | 'setup' | 'confirm';
+function formatRupiah(value: string): string {
+  const num = value.replace(/\D/g, '');
+  if (!num) return '';
+  return Number(num).toLocaleString('id-ID');
+}
+
+function parseRupiah(value: string): number {
+  return parseInt(value.replace(/\./g, '').replace(/,/g, ''), 10) || 0;
+}
+
+// ─── Mode ─────────────────────────────────────────────────────────────────────
+
+type Mode =
+  | 'onboarding_name'
+  | 'onboarding_saldo_pegangan'
+  | 'onboarding_saldo_tabungan'
+  | 'unlock'
+  | 'setup'
+  | 'confirm';
+
+// ─── Komponen utama ───────────────────────────────────────────────────────────
 
 export default function LockScreen({ onUnlocked }: LockScreenProps) {
   const [pin, setPin]               = useState('');
@@ -189,7 +205,14 @@ export default function LockScreen({ onUnlocked }: LockScreenProps) {
   const [error, setError]           = useState('');
   const [shake, setShake]           = useState(false);
   const [biometricMode, setBiometricMode] = useState<BiometricMode>('none');
-  const [webAuthnPrompt, setWebAuthnPrompt] = useState(false); // tawaran daftar WebAuthn
+  const [webAuthnPrompt, setWebAuthnPrompt] = useState(false);
+
+  // Onboarding state
+  const [userName, setUserName]           = useState('');
+  const [saldoPegangan, setSaldoPegangan] = useState('');
+  const [saldoTabungan, setSaldoTabungan] = useState('');
+  const [nameError, setNameError]         = useState('');
+
   const initialized = useRef(false);
 
   const triggerShake = useCallback(() => {
@@ -197,7 +220,6 @@ export default function LockScreen({ onUnlocked }: LockScreenProps) {
     setTimeout(() => setShake(false), 600);
   }, []);
 
-  // ── Attempt biometric (dispatch ke mode yang tepat) ──
   const attemptBiometric = useCallback(async () => {
     if (biometricMode === 'capacitor') {
       const ok = await tryCapacitorBiometric();
@@ -213,6 +235,12 @@ export default function LockScreen({ onUnlocked }: LockScreenProps) {
   useEffect(() => {
     if (initialized.current) return;
     initialized.current = true;
+
+    const onboardingDone = isOnboardingComplete();
+    if (!onboardingDone) {
+      setMode('onboarding_name');
+      return;
+    }
 
     const pinSet = isPinSet();
     if (!pinSet) {
@@ -230,7 +258,6 @@ export default function LockScreen({ onUnlocked }: LockScreenProps) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Auto-trigger biometric setelah mode terdeteksi
   useEffect(() => {
     if (mode === 'unlock' && biometricMode !== 'none') {
       setTimeout(() => attemptBiometric(), 400);
@@ -238,14 +265,13 @@ export default function LockScreen({ onUnlocked }: LockScreenProps) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [biometricMode]);
 
-  // ── Input handler ──
+  // ── PIN Input handler ──
   const handleDigit = useCallback(async (digit: string) => {
     setError('');
 
     if (mode === 'setup') {
       const next = pin + digit;
       if (next.length < PIN_LENGTH) { setPin(next); return; }
-      // Digit terakhir setup → pindah ke confirm
       sessionStorage.setItem('_pin_temp', next);
       setPin('');
       setMode('confirm');
@@ -255,12 +281,10 @@ export default function LockScreen({ onUnlocked }: LockScreenProps) {
     if (mode === 'confirm') {
       const next = confirmPin + digit;
       if (next.length < PIN_LENGTH) { setConfirmPin(next); return; }
-      // Digit terakhir confirm
       const storedTemp = sessionStorage.getItem('_pin_temp');
       if (storedTemp === next) {
         await savePin(next);
         sessionStorage.removeItem('_pin_temp');
-        // Tawaran daftar WebAuthn (hanya di browser, bukan Capacitor)
         if (!window.Capacitor && webAuthnSupported()) {
           setConfirmPin('');
           setWebAuthnPrompt(true);
@@ -293,12 +317,12 @@ export default function LockScreen({ onUnlocked }: LockScreenProps) {
 
   const handleDelete = useCallback(() => {
     setError('');
-    if (mode === 'setup')   setPin(p => p.slice(0, -1));
-    else if (mode === 'confirm') setConfirmPin(p => p.slice(0, -1));
-    else setPin(p => p.slice(0, -1));
+    if (mode === 'setup')         setPin(p => p.slice(0, -1));
+    else if (mode === 'confirm')  setConfirmPin(p => p.slice(0, -1));
+    else                          setPin(p => p.slice(0, -1));
   }, [mode]);
 
-  // ── WebAuthn registration prompt handler ──
+  // ── WebAuthn registration ──
   const handleWebAuthnYes = useCallback(async () => {
     const ok = await registerWebAuthn();
     if (ok) setBiometricMode('webauthn');
@@ -310,6 +334,167 @@ export default function LockScreen({ onUnlocked }: LockScreenProps) {
     setWebAuthnPrompt(false);
     onUnlocked();
   }, [onUnlocked]);
+
+  // ── Onboarding handlers ──
+  const handleNameSubmit = useCallback(() => {
+    const trimmed = userName.trim();
+    if (!trimmed) { setNameError('Nama tidak boleh kosong'); return; }
+    setNameError('');
+    setMode('onboarding_saldo_pegangan');
+  }, [userName]);
+
+  const handleSaldoPeganganSubmit = useCallback(() => {
+    setMode('onboarding_saldo_tabungan');
+  }, []);
+
+  const handleSaldoTabunganSubmit = useCallback(() => {
+    const pegangan = parseRupiah(saldoPegangan);
+    const tabungan = parseRupiah(saldoTabungan);
+    saveOnboarding(userName.trim(), pegangan, tabungan);
+    setMode('setup');
+  }, [userName, saldoPegangan, saldoTabungan]);
+
+  // ─── Render: Onboarding — Nama ────────────────────────────────────────────
+  if (mode === 'onboarding_name') {
+    return (
+      <div style={styles.overlay}>
+        <div style={styles.container}>
+          <div style={styles.logoArea}>
+            <div style={styles.logoIcon}>💰</div>
+            <h1 style={styles.appName}>Keuanganku</h1>
+          </div>
+
+          <div style={styles.onboardingCard}>
+            <div style={styles.stepIndicator}>
+              <span style={styles.stepDotActive} />
+              <span style={styles.stepDot} />
+              <span style={styles.stepDot} />
+            </div>
+            <p style={styles.onboardingTitle}>Halo! Siapa namamu? 👋</p>
+            <p style={styles.onboardingSubtitle}>
+              Kami akan menyapa kamu dengan nama ini di dashboard
+            </p>
+
+            <input
+              style={{ ...styles.textInput, ...(nameError ? styles.textInputError : {}) }}
+              type="text"
+              placeholder="Masukkan namamu"
+              value={userName}
+              onChange={e => { setUserName(e.target.value); setNameError(''); }}
+              onKeyDown={e => e.key === 'Enter' && handleNameSubmit()}
+              autoFocus
+              maxLength={30}
+            />
+            {nameError && <p style={styles.inputErrorMsg}>{nameError}</p>}
+
+            <button style={styles.primaryBtn} onClick={handleNameSubmit}>
+              Lanjut →
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Render: Onboarding — Saldo Pegangan ──────────────────────────────────
+  if (mode === 'onboarding_saldo_pegangan') {
+    return (
+      <div style={styles.overlay}>
+        <div style={styles.container}>
+          <div style={styles.logoArea}>
+            <div style={styles.logoIcon}>💰</div>
+            <h1 style={styles.appName}>Keuanganku</h1>
+          </div>
+
+          <div style={styles.onboardingCard}>
+            <div style={styles.stepIndicator}>
+              <span style={styles.stepDot} />
+              <span style={styles.stepDotActive} />
+              <span style={styles.stepDot} />
+            </div>
+            <p style={styles.onboardingTitle}>Saldo pegangan kamu 💵</p>
+            <p style={styles.onboardingSubtitle}>
+              Berapa uang yang kamu pegang sekarang?
+              Bisa dikosongkan jika belum tahu.
+            </p>
+
+            <div style={styles.rupiahInputWrapper}>
+              <span style={styles.rupiahPrefix}>Rp</span>
+              <input
+                style={styles.rupiahInput}
+                type="text"
+                inputMode="numeric"
+                placeholder="0"
+                value={saldoPegangan}
+                onChange={e => setSaldoPegangan(formatRupiah(e.target.value))}
+                onKeyDown={e => e.key === 'Enter' && handleSaldoPeganganSubmit()}
+                autoFocus
+              />
+            </div>
+
+            <div style={styles.btnRow}>
+              <button style={styles.secondaryBtn} onClick={() => setMode('onboarding_name')}>
+                ← Kembali
+              </button>
+              <button style={styles.primaryBtnFlex} onClick={handleSaldoPeganganSubmit}>
+                Lanjut →
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Render: Onboarding — Saldo Tabungan ──────────────────────────────────
+  if (mode === 'onboarding_saldo_tabungan') {
+    return (
+      <div style={styles.overlay}>
+        <div style={styles.container}>
+          <div style={styles.logoArea}>
+            <div style={styles.logoIcon}>💰</div>
+            <h1 style={styles.appName}>Keuanganku</h1>
+          </div>
+
+          <div style={styles.onboardingCard}>
+            <div style={styles.stepIndicator}>
+              <span style={styles.stepDot} />
+              <span style={styles.stepDot} />
+              <span style={styles.stepDotActive} />
+            </div>
+            <p style={styles.onboardingTitle}>Saldo tabungan kamu 🏦</p>
+            <p style={styles.onboardingSubtitle}>
+              Berapa total tabungan yang kamu simpan?
+              Bisa dikosongkan jika belum ada.
+            </p>
+
+            <div style={styles.rupiahInputWrapper}>
+              <span style={styles.rupiahPrefix}>Rp</span>
+              <input
+                style={styles.rupiahInput}
+                type="text"
+                inputMode="numeric"
+                placeholder="0"
+                value={saldoTabungan}
+                onChange={e => setSaldoTabungan(formatRupiah(e.target.value))}
+                onKeyDown={e => e.key === 'Enter' && handleSaldoTabunganSubmit()}
+                autoFocus
+              />
+            </div>
+
+            <div style={styles.btnRow}>
+              <button style={styles.secondaryBtn} onClick={() => setMode('onboarding_saldo_pegangan')}>
+                ← Kembali
+              </button>
+              <button style={styles.primaryBtnFlex} onClick={handleSaldoTabunganSubmit}>
+                Buat PIN →
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // ─── Render: WebAuthn prompt ──────────────────────────────────────────────
   if (webAuthnPrompt) {
@@ -339,7 +524,7 @@ export default function LockScreen({ onUnlocked }: LockScreenProps) {
     );
   }
 
-  // ─── Render: Lock screen ──────────────────────────────────────────────────
+  // ─── Render: Lock screen (PIN setup / confirm / unlock) ───────────────────
   const currentLength = mode === 'confirm' ? confirmPin.length : pin.length;
 
   const title =
@@ -385,7 +570,6 @@ export default function LockScreen({ onUnlocked }: LockScreenProps) {
             <button key={d} style={styles.numBtn} onClick={() => handleDigit(d)}>{d}</button>
           ))}
 
-          {/* Biometric slot (kiri bawah) */}
           <div style={styles.numBtnEmpty}>
             {mode === 'unlock' && biometricIcon && (
               <button style={styles.biometricBtn} onClick={attemptBiometric} title="Gunakan Biometrik">
@@ -431,6 +615,98 @@ const styles: Record<string, React.CSSProperties> = {
   },
   logoIcon:  { fontSize: '48px', lineHeight: 1 },
   appName:   { fontSize: '22px', fontWeight: '800', color: '#1A1A2E', margin: 0 },
+
+  // ── Onboarding card ──
+  onboardingCard: {
+    backgroundColor: '#fff',
+    borderRadius: '20px',
+    padding: '28px 24px 24px',
+    width: '100%',
+    boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+  },
+  stepIndicator: {
+    display: 'flex', gap: '8px', marginBottom: '20px',
+  },
+  stepDot: {
+    width: '8px', height: '8px', borderRadius: '50%',
+    backgroundColor: '#E0DCF8',
+  },
+  stepDotActive: {
+    width: '24px', height: '8px', borderRadius: '4px',
+    backgroundColor: '#7C5CFC',
+  },
+  onboardingTitle: {
+    fontSize: '18px', fontWeight: '700', color: '#1A1A2E',
+    margin: '0 0 8px', textAlign: 'center',
+  },
+  onboardingSubtitle: {
+    fontSize: '13px', color: '#888', lineHeight: 1.5,
+    margin: '0 0 24px', textAlign: 'center',
+  },
+  textInput: {
+    width: '100%', padding: '14px 16px',
+    border: '2px solid #E8E8F0', borderRadius: '12px',
+    fontSize: '16px', fontFamily: "'Plus Jakarta Sans', sans-serif",
+    color: '#1A1A2E', backgroundColor: '#F6F7FB',
+    outline: 'none', boxSizing: 'border-box',
+    marginBottom: '8px',
+  },
+  textInputError: {
+    borderColor: '#EF4444',
+  },
+  inputErrorMsg: {
+    color: '#EF4444', fontSize: '12px', fontWeight: '600',
+    margin: '0 0 12px', alignSelf: 'flex-start',
+  },
+  primaryBtn: {
+    width: '100%', padding: '14px',
+    backgroundColor: '#7C5CFC', color: '#fff',
+    border: 'none', borderRadius: '14px',
+    fontSize: '15px', fontWeight: '700',
+    cursor: 'pointer', fontFamily: 'inherit',
+    marginTop: '8px',
+  },
+  btnRow: {
+    display: 'flex', gap: '10px', width: '100%', marginTop: '8px',
+  },
+  secondaryBtn: {
+    flex: '0 0 auto', padding: '14px 16px',
+    backgroundColor: '#F0EDF8', color: '#7C5CFC',
+    border: 'none', borderRadius: '14px',
+    fontSize: '14px', fontWeight: '600',
+    cursor: 'pointer', fontFamily: 'inherit',
+  },
+  primaryBtnFlex: {
+    flex: 1, padding: '14px',
+    backgroundColor: '#7C5CFC', color: '#fff',
+    border: 'none', borderRadius: '14px',
+    fontSize: '15px', fontWeight: '700',
+    cursor: 'pointer', fontFamily: 'inherit',
+  },
+  rupiahInputWrapper: {
+    display: 'flex', alignItems: 'center',
+    width: '100%',
+    border: '2px solid #E8E8F0', borderRadius: '12px',
+    backgroundColor: '#F6F7FB',
+    marginBottom: '8px', overflow: 'hidden',
+  },
+  rupiahPrefix: {
+    padding: '14px 0 14px 16px',
+    fontSize: '16px', fontWeight: '700', color: '#7C5CFC',
+    fontFamily: "'Plus Jakarta Sans', sans-serif",
+    whiteSpace: 'nowrap',
+  },
+  rupiahInput: {
+    flex: 1, padding: '14px 16px',
+    border: 'none', outline: 'none',
+    fontSize: '16px', fontFamily: "'Plus Jakarta Sans', sans-serif",
+    color: '#1A1A2E', backgroundColor: 'transparent',
+  },
+
+  // ── PIN screen ──
   title:     { fontSize: '20px', fontWeight: '700', color: '#1A1A2E', margin: '0 0 6px' },
   subtitle:  { fontSize: '14px', color: '#888', margin: '0 0 28px', textAlign: 'center', lineHeight: 1.4 },
   dotsRow:   { display: 'flex', gap: '16px', marginBottom: '12px' },

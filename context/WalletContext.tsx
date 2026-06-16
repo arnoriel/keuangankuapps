@@ -14,6 +14,7 @@ interface WalletContextType extends AppState {
   todayIncome: number;
   monthIncome: number;
   monthExpense: number;
+  refreshState: () => void;
   addIncome: (amount: number, period: IncomePeriod, category?: IncomeCategory, note?: string) => void;
   addExpense: (amount: number, note: string, category?: ExpenseCategory) => void;
   transfer: (amount: number, from: 'pegangan' | 'tabungan', to: 'pegangan' | 'tabungan') => void;
@@ -52,6 +53,11 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   });
 
   useEffect(() => { setWalletState(storage.getState()); }, []);
+
+  // Dipanggil setelah onboarding selesai supaya saldo langsung ter-sync
+  const refreshState = useCallback(() => {
+    setWalletState(storage.getState());
+  }, []);
 
   const addIncome = useCallback((amount: number, period: IncomePeriod, category?: IncomeCategory, note?: string) => {
     setWalletState(storage.addIncome(amount, period, category ?? 'lainnya', note));
@@ -104,6 +110,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       ...walletState,
       totalSaldo: walletState.saldoPegangan + walletState.saldoTabungan,
       ...stats,
+      refreshState,
       addIncome, addExpense, transfer,
       updateTransaction, deleteTransaction,
       addRecurring, toggleRecurring, deleteRecurring,

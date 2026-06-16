@@ -6,18 +6,23 @@ import AddTransactionSheet from './AddTransactionSheet';
 import SplashScreen from './SplashScreen';
 import LockScreen from './LockScreen';
 import { useLockState } from '@/hooks/useLockState';
+import { useWallet } from '@/context/WalletContext';
 
 export default function AppShell({ children }: { children: ReactNode }) {
   const [showAddSheet, setShowAddSheet] = useState(false);
   const { isLocked, handleUnlocked } = useLockState();
+  const { refreshState } = useWallet();
 
-  // isLocked null = masih loading / cek sessionStorage
   if (isLocked === null) {
     return null;
   }
 
   if (isLocked) {
-    return <LockScreen onUnlocked={handleUnlocked} />;
+    const handleUnlockedWithRefresh = () => {
+      refreshState(); // sync saldo dari localStorage sebelum tampil
+      handleUnlocked();
+    };
+    return <LockScreen onUnlocked={handleUnlockedWithRefresh} />;
   }
 
   return (
