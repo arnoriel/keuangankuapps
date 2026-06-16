@@ -16,9 +16,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  width: auto;
-  margin: 0 auto;
-  max-width: 430px;
+  width: 100%;
+  margin: 0;
   background: var(--bg-modal);
   border-top-left-radius: var(--r-3xl);
   border-top-right-radius: var(--r-3xl);
@@ -27,6 +26,26 @@
   max-height: 92dvh;
   overflow-y: auto;
   box-shadow: 0 -4px 60px rgba(10, 15, 40, 0.18);
+}
+
+/* Cap lebar sheet ke ukuran "kartu HP" HANYA saat dibuka di viewport
+   benar-benar lebar (tablet/desktop browser tab). Jangan pernah pakai
+   max-width fixed px di breakpoint mobile — banyak HP Android punya
+   CSS viewport width > 430px (tergantung display-size/density setting),
+   jadi sheet jadi nggak full-bleed dan muncul gap kiri-kanan. */
+@media (min-width: 600px) {
+  .sheet {
+    width: auto;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    max-width: 430px;
+  }
+
+  @keyframes slideUp {
+    from { transform: translate(-50%, 100%); }
+    to   { transform: translate(-50%, 0); }
+  }
 }
 
 .sheet-handle {
