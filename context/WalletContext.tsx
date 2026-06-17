@@ -18,6 +18,7 @@ interface WalletContextType extends AppState {
   addIncome: (amount: number, period: IncomePeriod, category?: IncomeCategory, note?: string) => void;
   addExpense: (amount: number, note: string, category?: ExpenseCategory) => void;
   transfer: (amount: number, from: 'pegangan' | 'tabungan', to: 'pegangan' | 'tabungan') => void;
+  editSaldo: (wallet: 'pegangan' | 'tabungan', newAmount: number) => void;
   updateTransaction: (id: string, data: TransactionEditData) => void;
   deleteTransaction: (id: string) => void;
   addRecurring: (data: Omit<RecurringExpense, 'id' | 'createdAt'>) => void;
@@ -71,6 +72,10 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     setWalletState(storage.transferFunds(amount, from, to));
   }, []);
 
+  const editSaldo = useCallback((wallet: 'pegangan' | 'tabungan', newAmount: number) => {
+    setWalletState(storage.editSaldo(wallet, newAmount));
+  }, []);
+
   const updateTransaction = useCallback((id: string, data: TransactionEditData) => {
     setWalletState(storage.updateTransaction(id, data));
   }, []);
@@ -111,7 +116,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       totalSaldo: walletState.saldoPegangan + walletState.saldoTabungan,
       ...stats,
       refreshState,
-      addIncome, addExpense, transfer,
+      addIncome, addExpense, transfer, editSaldo,
       updateTransaction, deleteTransaction,
       addRecurring, toggleRecurring, deleteRecurring,
       addGoal, updateGoalAmount, deleteGoal,

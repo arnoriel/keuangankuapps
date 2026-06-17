@@ -262,6 +262,95 @@
 .card-eye-btn i { font-size: 12px; }
 
 /* =====================
+   CARD MENU (titik tiga + dropdown)
+   ===================== */
+.card-menu-wrap {
+  position: absolute;
+  top: 16px;
+  right: 22px;
+  z-index: 2;
+}
+
+.card-menu-btn {
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.16);
+  border-radius: 9px;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255,255,255,0.80);
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+
+.card-menu-btn:active { transform: scale(0.88); background: rgba(255,255,255,0.22); }
+.card-menu-btn i { font-size: 13px; }
+
+.card-menu-dropdown {
+  position: absolute;
+  top: 36px;
+  right: 0;
+  min-width: 168px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-lg);
+  padding: 6px;
+  animation: cardMenuPop 0.15s ease;
+  transform-origin: top right;
+}
+
+@keyframes cardMenuPop {
+  from { opacity: 0; transform: scale(0.92) translateY(-4px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.card-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  background: none;
+  border: none;
+  text-align: left;
+  padding: 10px 11px;
+  border-radius: var(--r-sm);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+  transition: background 0.12s ease;
+}
+
+.card-menu-item i { font-size: 12px; color: var(--text-4); width: 14px; flex-shrink: 0; }
+.card-menu-item:active { background: var(--bg-card-2); }
+
+/* =====================
+   EDIT NOMINAL (inline, autosave on blur)
+   ===================== */
+.card-amount-edit-wrap { margin-top: 9px; }
+
+.card-amount-input {
+  width: 100%;
+  background: rgba(255,255,255,0.14);
+  border: 1.5px solid rgba(255,255,255,0.45);
+  border-radius: var(--r-sm);
+  padding: 6px 10px;
+  font-size: 22px;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: -0.6px;
+  font-family: var(--font);
+  outline: none;
+  -webkit-appearance: none;
+}
+
+.card-amount-input::placeholder { color: rgba(255,255,255,0.45); }
+.card-amount-input::-webkit-outer-spin-button,
+.card-amount-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+/* =====================
    TRANSFER BUTTON
    ===================== */
 .transfer-btn-wrapper {

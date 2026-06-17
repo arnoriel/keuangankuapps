@@ -129,6 +129,21 @@ export function addExpense(
   return next;
 }
 
+// ─── EDIT SALDO (KOREKSI NOMINAL MANUAL) ───────────────────────────────────
+// Dipakai saat user salah input saldo pegangan/tabungan dan ingin
+// mengoreksi nominalnya secara langsung, tanpa membuat transaksi baru.
+export function editSaldo(wallet: WalletType, newAmount: number): AppState {
+  const state = getState();
+  const safeAmount = Math.max(0, Math.round(newAmount));
+  const next: AppState = {
+    ...state,
+    saldoPegangan: wallet === 'pegangan' ? safeAmount : state.saldoPegangan,
+    saldoTabungan: wallet === 'tabungan' ? safeAmount : state.saldoTabungan,
+  };
+  setState(next);
+  return next;
+}
+
 export function transferFunds(amount: number, from: WalletType, to: WalletType): AppState {
   const state = getState();
   const now = new Date();

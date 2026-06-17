@@ -1,7 +1,7 @@
 'use client';
 
 import '@/styles/home.css';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useWallet } from '@/context/WalletContext';
 import TransactionItem from '@/components/TransactionItem';
@@ -9,6 +9,8 @@ import TransferModal from '@/components/TransferModal';
 import EditTransactionSheet from '@/components/EditTransactionSheet';
 import { Transaction } from '@/lib/types';
 import { formatRupiah, formatRupiahShort, getGreeting, formatFullDate, getTodayDateStr } from '@/lib/utils';
+
+type CardKey = 'pegangan' | 'tabungan';
 
 export default function DashboardPage() {
   const wallet = useWallet();
@@ -18,6 +20,52 @@ export default function DashboardPage() {
   const [hidePegangan, setHidePegangan] = useState(false);
   const [hideTabungan, setHideTabungan] = useState(false);
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
+
+  // Dropdown titik tiga & mode edit nominal per card
+  const [openMenu, setOpenMenu] = useState<CardKey | null>(null);
+  const [editingCard, setEditingCard] = useState<CardKey | null>(null);
+  const [editValue, setEditValue] = useState('');
+
+  const peganganMenuRef = useRef<HTMLDivElement>(null);
+  const tabunganMenuRef = useRef<HTMLDivElement>(null);
+  const editInputRef = useRef<HTMLInputElement>(null);
+
+  // Tutup dropdown saat tap di luar area card menu
+  useEffect(() => {
+    if (!openMenu) return;
+    const handleOutside = (e: MouseEvent | TouchEvent) => {
+      const ref = openMenu === 'pegangan' ? peganganMenuRef : tabunganMenuRef;
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpenMenu(null);
+      }
+    };
+    document.addEventListener('mousedown', handleOutside);
+    document.addEventListener('touchstart', handleOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleOutside);
+      document.removeEventListener('touchstart', handleOutside);
+    };
+  }, [openMenu]);
+
+  // Auto-focus input begitu masuk mode edit
+  useEffect(() => {
+    if (editingCard) editInputRef.current?.focus();
+  }, [editingCard]);
+
+  const startEdit = (card: CardKey) => {
+    const current = card === 'pegangan' ? wallet.saldoPegangan : wallet.saldoTabungan;
+    setEditValue(String(current));
+    setEditingCard(card);
+    setOpenMenu(null);
+  };
+
+  const commitEdit = () => {
+    if (!editingCard) return;
+    const parsed = parseInt(editValue.replace(/[^0-9]/g, ''), 10);
+    const finalAmount = Number.isFinite(parsed) ? parsed : 0;
+    wallet.editSaldo(editingCard, finalAmount);
+    setEditingCard(null);
+  };
 
   const recentTx = wallet.transactions.slice(0, 8);
   const todayStr = getTodayDateStr();
@@ -105,12 +153,53 @@ export default function DashboardPage() {
         <div className="wallet-card wallet-card-green">
           <div className="card-deco" />
           <div className="card-shine" />
+
+          <div className="card-menu-wrap" ref={peganganMenuRef}>
+            <button
+              className="card-menu-btn"
+              onClick={() => setOpenMenu((m) => (m === 'pegangan' ? null : 'pegangan'))}
+              aria-label="Opsi saldo pegangan"
+            >
+              <i className="fa-solid fa-ellipsis-vertical" />
+            </button>
+            {openMenu === 'pegangan' && (
+              <div className="card-menu-dropdown">
+                <button
+                  className="card-menu-item"
+                  onClick={() => startEdit('pegangan')}
+                >
+                  <i className="fa-solid fa-pen" />
+                  Edit Nominal
+                </button>
+              </div>
+            )}
+          </div>
+
           <div className="card-content">
             <div className="card-label">
               <i className="fa-solid fa-wallet" />
               Saldo Pegangan
             </div>
-            <div className="card-amount">{maskPegangan(wallet.saldoPegangan)}</div>
+
+            {editingCard === 'pegangan' ? (
+              <div className="card-amount-edit-wrap">
+                <input
+                  ref={editInputRef}
+                  className="card-amount-input"
+                  type="text"
+                  inputMode="numeric"
+                  value={editValue}
+                  onChange={(e) => setEditValue(e.target.value.replace(/[^0-9]/g, ''))}
+                  onBlur={commitEdit}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') editInputRef.current?.blur();
+                  }}
+                />
+              </div>
+            ) : (
+              <div className="card-amount">{maskPegangan(wallet.saldoPegangan)}</div>
+            )}
+
             <div className="card-footer">
               <span className="card-badge">
                 <i className="fa-solid fa-plus" style={{ fontSize: 9 }} />
@@ -144,12 +233,53 @@ export default function DashboardPage() {
         <div className="wallet-card wallet-card-blue">
           <div className="card-deco" />
           <div className="card-shine" />
+
+          <div className="card-menu-wrap" ref={tabunganMenuRef}>
+            <button
+              className="card-menu-btn"
+              onClick={() => setOpenMenu((m) => (m === 'tabungan' ? null : 'tabungan'))}
+              aria-label="Opsi saldo tabungan"
+            >
+              <i className="fa-solid fa-ellipsis-vertical" />
+            </button>
+            {openMenu === 'tabungan' && (
+              <div className="card-menu-dropdown">
+                <button
+                  className="card-menu-item"
+                  onClick={() => startEdit('tabungan')}
+                >
+                  <i className="fa-solid fa-pen" />
+                  Edit Nominal
+                </button>
+              </div>
+            )}
+          </div>
+
           <div className="card-content">
             <div className="card-label">
               <i className="fa-solid fa-piggy-bank" />
               Saldo Tabungan
             </div>
-            <div className="card-amount">{maskTabungan(wallet.saldoTabungan)}</div>
+
+            {editingCard === 'tabungan' ? (
+              <div className="card-amount-edit-wrap">
+                <input
+                  ref={editInputRef}
+                  className="card-amount-input"
+                  type="text"
+                  inputMode="numeric"
+                  value={editValue}
+                  onChange={(e) => setEditValue(e.target.value.replace(/[^0-9]/g, ''))}
+                  onBlur={commitEdit}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') editInputRef.current?.blur();
+                  }}
+                />
+              </div>
+            ) : (
+              <div className="card-amount">{maskTabungan(wallet.saldoTabungan)}</div>
+            )}
+
             <div className="card-footer">
               <span className="card-badge">
                 <i className="fa-solid fa-lock" style={{ fontSize: 9 }} />
