@@ -3,7 +3,7 @@
 import '@/styles/sheet.css';
 import { useState, useRef, useEffect } from 'react';
 import { useWallet } from '@/context/WalletContext';
-import { IncomePeriod, IncomeCategory, ExpenseCategory } from '@/lib/types';
+import { IncomePeriod, IncomeCategory, ExpenseCategory, WalletType } from '@/lib/types';
 import { formatRupiah, parseAmountInput, INCOME_CATEGORIES, EXPENSE_CATEGORIES } from '@/lib/utils';
 
 type Step = 'choose' | 'income' | 'expense' | 'success';
@@ -11,12 +11,13 @@ type Step = 'choose' | 'income' | 'expense' | 'success';
 interface Props { onClose: () => void; }
 
 export default function AddTransactionSheet({ onClose }: Props) {
-  const { addIncome, addExpense } = useWallet();
+  const { addIncome, addExpense, saldoPegangan, saldoTabungan } = useWallet();
   const [step, setStep] = useState<Step>('choose');
   const [rawAmount, setRawAmount] = useState('');
   const [period, setPeriod] = useState<IncomePeriod>('harian');
   const [incomeCategory, setIncomeCategory] = useState<IncomeCategory>('lainnya');
   const [expenseCategory, setExpenseCategory] = useState<ExpenseCategory>('lainnya');
+  const [expenseWallet, setExpenseWallet] = useState<WalletType>('pegangan');
   const [note, setNote] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -43,17 +44,22 @@ export default function AddTransactionSheet({ onClose }: Props) {
       setSuccessMsg(`${formatRupiah(amount)} ditambahkan ke Saldo Pegangan`);
     } else if (step === 'expense') {
       const noteText = note.trim() || EXPENSE_CATEGORIES.find(c => c.key === expenseCategory)?.label || 'Pengeluaran';
-      addExpense(amount, noteText, expenseCategory);
-      setSuccessMsg(`${formatRupiah(amount)} dicatat sebagai pengeluaran`);
+      addExpense(amount, noteText, expenseCategory, expenseWallet);
+      const walletLabel = expenseWallet === 'tabungan' ? 'Saldo Tabungan' : 'Saldo Pegangan';
+      setSuccessMsg(`${formatRupiah(amount)} dikurangi dari ${walletLabel}`);
     }
     setStep('success');
     setTimeout(() => onClose(), 1800);
   }
 
   function handleBack() {
-    setRawAmount(''); setNote('');
+    setRawAmount(''); setNote(''); setExpenseWallet('pegangan');
     setStep('choose');
   }
+
+  const insufficientBalance =
+    step === 'expense' && amount > 0 &&
+    amount > (expenseWallet === 'tabungan' ? saldoTabungan : saldoPegangan);
 
   return (
     <>
@@ -183,6 +189,23 @@ export default function AddTransactionSheet({ onClose }: Props) {
             </div>
 
             <div className="form-group">
+              <label className="form-label">Ambil dari Saldo</label>
+              <div className="period-tabs">
+                <button className={`period-tab ${expenseWallet === 'pegangan' ? 'active' : ''}`}
+                  onClick={() => setExpenseWallet('pegangan')} type="button">
+                  <i className="fa-solid fa-wallet" /> Pegangan
+                </button>
+                <button className={`period-tab ${expenseWallet === 'tabungan' ? 'active' : ''}`}
+                  onClick={() => setExpenseWallet('tabungan')} type="button">
+                  <i className="fa-solid fa-piggy-bank" /> Tabungan
+                </button>
+              </div>
+              <p className="sheet-subtitle" style={{ margin: '6px 2px 0' }}>
+                Saldo tersedia: {formatRupiah(expenseWallet === 'tabungan' ? saldoTabungan : saldoPegangan)}
+              </p>
+            </div>
+
+            <div className="form-group">
               <label className="form-label">Keterangan <span className="label-optional">(opsional)</span></label>
               <input type="text" className="text-input"
                 placeholder={`Contoh: ${EXPENSE_CATEGORIES.find(c => c.key === expenseCategory)?.label ?? 'Pengeluaran'}...`}
@@ -191,9 +214,17 @@ export default function AddTransactionSheet({ onClose }: Props) {
 
             {amount > 0 && (
               <div className="amount-preview expense-preview">
-                <span className="preview-label"><i className="fa-solid fa-money-bill-wave" /> Keluar dari Saldo Pegangan</span>
+                <span className="preview-label">
+                  <i className="fa-solid fa-money-bill-wave" />
+                  Keluar dari Saldo {expenseWallet === 'tabungan' ? 'Tabungan' : 'Pegangan'}
+                </span>
                 <span className="preview-amount">-{formatRupiah(amount)}</span>
               </div>
+            )}
+            {insufficientBalance && (
+              <p className="sheet-subtitle" style={{ color: 'var(--danger, #e5484d)', margin: '6px 2px 0' }}>
+                <i className="fa-solid fa-triangle-exclamation" /> Saldo tidak mencukupi
+              </p>
             )}
             <button className="btn-primary btn-danger" onClick={handleSubmit} disabled={amount <= 0}>Simpan Pengeluaran</button>
             <button className="btn-ghost" onClick={handleBack}>Batal</button>

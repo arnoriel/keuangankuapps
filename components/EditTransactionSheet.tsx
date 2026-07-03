@@ -4,7 +4,7 @@ import '@/styles/sheet.css';
 import '@/styles/edit-sheet.css';
 import { useState, useRef, useEffect } from 'react';
 import { useWallet } from '@/context/WalletContext';
-import { Transaction, IncomeCategory, ExpenseCategory, IncomePeriod } from '@/lib/types';
+import { Transaction, IncomeCategory, ExpenseCategory, IncomePeriod, WalletType } from '@/lib/types';
 import { formatRupiah, parseAmountInput, INCOME_CATEGORIES, EXPENSE_CATEGORIES } from '@/lib/utils';
 
 interface Props {
@@ -21,6 +21,7 @@ export default function EditTransactionSheet({ tx, onClose }: Props) {
   const [note, setNote] = useState(tx.note ?? '');
   const [category, setCategory] = useState<string>(tx.category ?? 'lainnya');
   const [period, setPeriod] = useState<IncomePeriod>(tx.period ?? 'harian');
+  const [expenseWallet, setExpenseWallet] = useState<WalletType>(tx.wallet ?? 'pegangan');
   const [date, setDate] = useState(tx.date);
   const [successMsg, setSuccessMsg] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -48,6 +49,7 @@ export default function EditTransactionSheet({ tx, onClose }: Props) {
       note: note.trim() || undefined,
       category: (isIncome || isExpense) ? (category as IncomeCategory | ExpenseCategory) : undefined,
       period: isIncome ? period : undefined,
+      wallet: isExpense ? expenseWallet : undefined,
       date,
     });
     setSuccessMsg('Transaksi berhasil diperbarui');
@@ -123,6 +125,22 @@ export default function EditTransactionSheet({ tx, onClose }: Props) {
                       {cat.label}
                     </button>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {isExpense && (
+              <div className="form-group">
+                <label className="form-label">Ambil dari Saldo</label>
+                <div className="period-tabs">
+                  <button className={`period-tab ${expenseWallet === 'pegangan' ? 'active' : ''}`}
+                    onClick={() => setExpenseWallet('pegangan')} type="button">
+                    <i className="fa-solid fa-wallet" /> Pegangan
+                  </button>
+                  <button className={`period-tab ${expenseWallet === 'tabungan' ? 'active' : ''}`}
+                    onClick={() => setExpenseWallet('tabungan')} type="button">
+                    <i className="fa-solid fa-piggy-bank" /> Tabungan
+                  </button>
                 </div>
               </div>
             )}

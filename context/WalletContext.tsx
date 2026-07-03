@@ -4,7 +4,7 @@ import {
   createContext, useContext, useState, useEffect, useCallback, type ReactNode,
 } from 'react';
 import {
-  AppState, IncomePeriod, IncomeCategory, ExpenseCategory, RecurringExpense, SavingsGoal,
+  AppState, IncomePeriod, IncomeCategory, ExpenseCategory, WalletType, RecurringExpense, SavingsGoal,
 } from '@/lib/types';
 import * as storage from '@/lib/storage';
 import type { TransactionEditData } from '@/lib/storage';
@@ -16,7 +16,7 @@ interface WalletContextType extends AppState {
   monthExpense: number;
   refreshState: () => void;
   addIncome: (amount: number, period: IncomePeriod, category?: IncomeCategory, note?: string) => void;
-  addExpense: (amount: number, note: string, category?: ExpenseCategory) => void;
+  addExpense: (amount: number, note: string, category?: ExpenseCategory, wallet?: WalletType) => void;
   transfer: (amount: number, from: 'pegangan' | 'tabungan', to: 'pegangan' | 'tabungan') => void;
   editSaldo: (wallet: 'pegangan' | 'tabungan', newAmount: number) => void;
   updateTransaction: (id: string, data: TransactionEditData) => void;
@@ -64,8 +64,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     setWalletState(storage.addIncome(amount, period, category ?? 'lainnya', note));
   }, []);
 
-  const addExpense = useCallback((amount: number, note: string, category?: ExpenseCategory) => {
-    setWalletState(storage.addExpense(amount, note, category ?? 'lainnya'));
+  const addExpense = useCallback((amount: number, note: string, category?: ExpenseCategory, wallet?: WalletType) => {
+    setWalletState(storage.addExpense(amount, note, category ?? 'lainnya', wallet ?? 'pegangan'));
   }, []);
 
   const transfer = useCallback((amount: number, from: 'pegangan' | 'tabungan', to: 'pegangan' | 'tabungan') => {

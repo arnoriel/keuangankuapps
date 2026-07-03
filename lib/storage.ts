@@ -107,6 +107,7 @@ export function addExpense(
   amount: number,
   note: string,
   category: ExpenseCategory = 'lainnya',
+  wallet: WalletType = 'pegangan',
 ): AppState {
   const state = getState();
   const now = new Date();
@@ -114,7 +115,7 @@ export function addExpense(
     id: `tx_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
     type: 'expense',
     amount,
-    wallet: 'pegangan',
+    wallet,
     note: note.trim() || 'Pengeluaran',
     category,
     date: now.toISOString().split('T')[0],
@@ -122,7 +123,8 @@ export function addExpense(
   };
   const next: AppState = {
     ...state,
-    saldoPegangan: Math.max(0, state.saldoPegangan - amount),
+    saldoPegangan: wallet === 'pegangan' ? Math.max(0, state.saldoPegangan - amount) : state.saldoPegangan,
+    saldoTabungan: wallet === 'tabungan' ? Math.max(0, state.saldoTabungan - amount) : state.saldoTabungan,
     transactions: [tx, ...state.transactions],
   };
   setState(next);
@@ -176,7 +178,11 @@ function reverseTransactionEffect(state: AppState, tx: Transaction): AppState {
     case 'income':
       return { ...state, saldoPegangan: state.saldoPegangan - tx.amount };
     case 'expense':
-      return { ...state, saldoPegangan: state.saldoPegangan + tx.amount };
+      return {
+        ...state,
+        saldoPegangan: tx.wallet === 'pegangan' ? state.saldoPegangan + tx.amount : state.saldoPegangan,
+        saldoTabungan: tx.wallet === 'tabungan' ? state.saldoTabungan + tx.amount : state.saldoTabungan,
+      };
     case 'transfer_in': {
       const dest = tx.wallet;
       const source: WalletType = dest === 'pegangan' ? 'tabungan' : 'pegangan';
@@ -204,7 +210,11 @@ function applyTransactionEffect(state: AppState, tx: Transaction): AppState {
     case 'income':
       return { ...state, saldoPegangan: state.saldoPegangan + tx.amount };
     case 'expense':
-      return { ...state, saldoPegangan: state.saldoPegangan - tx.amount };
+      return {
+        ...state,
+        saldoPegangan: tx.wallet === 'pegangan' ? state.saldoPegangan - tx.amount : state.saldoPegangan,
+        saldoTabungan: tx.wallet === 'tabungan' ? state.saldoTabungan - tx.amount : state.saldoTabungan,
+      };
     case 'transfer_in': {
       const dest = tx.wallet;
       const source: WalletType = dest === 'pegangan' ? 'tabungan' : 'pegangan';
@@ -232,6 +242,7 @@ export interface TransactionEditData {
   note?: string;
   category?: IncomeCategory | ExpenseCategory;
   period?: IncomePeriod;
+  wallet?: WalletType;
   date: string;
 }
 
@@ -248,6 +259,7 @@ export function updateTransaction(id: string, data: TransactionEditData): AppSta
     note: data.note?.trim() || oldTx.note,
     category: data.category ?? oldTx.category,
     period: data.period ?? oldTx.period,
+    wallet: oldTx.type === 'expense' ? (data.wallet ?? oldTx.wallet) : oldTx.wallet,
     date: data.date,
   };
   next = applyTransactionEffect(next, updatedTx);

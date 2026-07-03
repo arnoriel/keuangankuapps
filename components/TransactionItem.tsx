@@ -57,7 +57,12 @@ export default function TransactionItem({ tx, onClick }: TransactionItemProps) {
       </div>
       <div className="tx-info">
         <div className="tx-title">{label}</div>
-        <div className="tx-subtitle">{formatDateAndTime(tx.createdAt)}</div>
+        <div className="tx-subtitle">
+          {formatDateAndTime(tx.createdAt)}
+          {tx.type === 'expense' && (
+            <> · {tx.wallet === 'tabungan' ? 'Tabungan' : 'Pegangan'}</>
+          )}
+        </div>
       </div>
       <div className={`tx-amount ${amountColor}`}>{prefix}{formatRupiah(tx.amount)}</div>
       {onClick && (
