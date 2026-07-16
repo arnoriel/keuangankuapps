@@ -215,6 +215,30 @@ export default function IncomesPage() {
         <div style={{ width: 36 }} />
       </header>
 
+      {/* Total Card */}
+      <section style={{ padding: '0 16px 16px' }}>
+        <div className="incomes-total-card">
+          <div className="incomes-total-label">
+            <i className="fa-solid fa-coins" /> Total Pemasukkan
+          </div>
+          <div className="incomes-total-amount">{formatRupiah(rangeTotal)}</div>
+          <div className="incomes-total-sub">{rangeTx.length} transaksi</div>
+        </div>
+      </section>
+
+      {/* Bar Chart */}
+      <section className="analytics-section">
+        <div className="section-header">
+          <span className="section-label">
+            <i className="fa-solid fa-chart-column" style={{ color: 'var(--green-light)', marginRight: 6 }} />
+            {period === 'harian' ? '7 Hari Terakhir' : period === 'mingguan' ? 'Senin – Minggu' : '6 Bulan Terakhir'}
+          </span>
+        </div>
+        <div className="chart-card">
+          <IncomeBarChart bars={bars} />
+        </div>
+      </section>
+
       {/* Period Tabs */}
       <section style={{ padding: '0 16px 12px' }}>
         <div className="incomes-period-tabs">
@@ -238,30 +262,6 @@ export default function IncomesPage() {
           <button className="month-nav-btn" onClick={() => navigate(1)} disabled={isCurrentRange}>
             <i className="fa-solid fa-chevron-right" style={{ opacity: isCurrentRange ? 0.3 : 1 }} />
           </button>
-        </div>
-      </section>
-
-      {/* Total Card */}
-      <section style={{ padding: '0 16px 16px' }}>
-        <div className="incomes-total-card">
-          <div className="incomes-total-label">
-            <i className="fa-solid fa-coins" /> Total Pemasukkan
-          </div>
-          <div className="incomes-total-amount">{formatRupiah(rangeTotal)}</div>
-          <div className="incomes-total-sub">{rangeTx.length} transaksi</div>
-        </div>
-      </section>
-
-      {/* Bar Chart */}
-      <section className="analytics-section">
-        <div className="section-header">
-          <span className="section-label">
-            <i className="fa-solid fa-chart-column" style={{ color: 'var(--green-light)', marginRight: 6 }} />
-            {period === 'harian' ? '7 Hari Terakhir' : period === 'mingguan' ? 'Senin – Minggu' : '6 Bulan Terakhir'}
-          </span>
-        </div>
-        <div className="chart-card">
-          <IncomeBarChart bars={bars} />
         </div>
       </section>
 

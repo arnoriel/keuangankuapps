@@ -9,6 +9,7 @@ import BiometricSheet from '@/components/BiometricSheet';
 import HelpSheet from '@/components/HelpSheet';
 import ExportSheet from '@/components/ExportSheet';
 import BackupSheet from '@/components/BackupSheet';
+import ThemeCustomizerSheet from '@/components/ThemeCustomizerSheet';
 
 type SaveStatus = 'idle' | 'saving' | 'saved';
 
@@ -23,6 +24,7 @@ export default function MenuPage() {
   const [showHelp, setShowHelp] = useState(false);
   const [showExport, setShowExport] = useState(false);
   const [showBackup, setShowBackup] = useState(false);
+  const [showTheme, setShowTheme] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -174,6 +176,19 @@ export default function MenuPage() {
         <div className="menu-section-label">Lainnya</div>
 
         <div className="menu-list">
+          <button className="menu-item" onClick={() => setShowTheme(true)}>
+            <div className="menu-item-icon menu-item-icon-brand">
+              <i className="fa-solid fa-palette" />
+            </div>
+            <div className="menu-item-body">
+              <div className="menu-item-title">Theme Customizer</div>
+              <div className="menu-item-sub">Ganti tampilan warna aplikasi sesuka kamu</div>
+            </div>
+            <i className="fa-solid fa-chevron-right menu-item-chevron" />
+          </button>
+
+          <div className="menu-divider" />
+
           <button className="menu-item" onClick={() => setShowExport(true)}>
             <div className="menu-item-icon menu-item-icon-green">
               <i className="fa-solid fa-file-export" />
@@ -244,6 +259,10 @@ export default function MenuPage() {
           onClose={() => setShowBackup(false)}
           onRestored={() => window.location.reload()}
         />
+      )}
+
+      {showTheme && (
+        <ThemeCustomizerSheet onClose={() => setShowTheme(false)} />
       )}
     </>
   );
