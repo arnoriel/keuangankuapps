@@ -1,0 +1,205 @@
+/* =====================
+   INCOMES PAGE
+   ===================== */
+.incomes-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.incomes-header > div { flex: 1; }
+
+/* Period Tabs */
+.incomes-period-tabs {
+  display: flex;
+  gap: 8px;
+  background: var(--bg-card-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 4px;
+}
+
+.incomes-period-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 8px;
+  border-radius: 10px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-3);
+  font-family: var(--font);
+  transition: all 0.18s ease;
+}
+
+.incomes-period-tab i { font-size: 11px; }
+
+.incomes-period-tab.active {
+  background: var(--brand);
+  color: #fff;
+  box-shadow: 0 3px 10px var(--brand-glow);
+}
+
+.incomes-period-tab:active { transform: scale(0.96); }
+
+/* Total Card */
+.incomes-total-card {
+  background: linear-gradient(135deg, var(--green-dark), var(--green));
+  border-radius: var(--r-xl);
+  padding: 18px 20px;
+  box-shadow: var(--shadow-md);
+  color: #fff;
+}
+
+.incomes-total-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  opacity: 0.85;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.incomes-total-amount {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.incomes-total-sub {
+  font-size: 12px;
+  opacity: 0.85;
+  margin-top: 4px;
+}
+
+/* Bar Chart */
+.income-bar-chart {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  height: 150px;
+}
+
+.income-bar-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.income-bar-track {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+}
+
+.income-bar-value {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: var(--text-4);
+  margin-bottom: 4px;
+  white-space: nowrap;
+}
+
+.income-bar {
+  width: 60%;
+  max-width: 26px;
+  border-radius: 6px 6px 0 0;
+  min-height: 4px;
+  background: linear-gradient(180deg, var(--green-light), var(--green));
+  transition: height 0.4s ease;
+}
+
+.income-bar--active {
+  background: linear-gradient(180deg, #FFD27A, var(--orange));
+}
+
+.income-bar-label {
+  flex-shrink: 0;
+  padding-top: 8px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--text-4);
+  text-align: center;
+}
+
+.income-bar-label--active {
+  color: var(--orange);
+  font-weight: 800;
+}
+
+/* Source Breakdown */
+.incomes-source-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.incomes-source-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.incomes-source-icon {
+  width: 34px; height: 34px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.incomes-source-info { flex: 1; min-width: 0; }
+
+.incomes-source-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-2);
+  margin-bottom: 5px;
+}
+
+.incomes-source-bar-track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--bg-elevated);
+  overflow: hidden;
+}
+
+.incomes-source-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+.incomes-source-value {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-1);
+  flex-shrink: 0;
+}
+
+/* Date Group / Transaction List */
+.incomes-date-group {
+  margin-bottom: 14px;
+}
+
+.incomes-date-header {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-3);
+  padding: 0 4px 8px;
+  text-transform: capitalize;
+}
+
+.incomes-date-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}

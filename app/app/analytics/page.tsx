@@ -120,6 +120,50 @@ function GoalsTeaser({ savingsGoals, recurringExpenses, onNavigate }: {
   );
 }
 
+// ─── Income Stream Teaser Card ────────────────────────────────────────────
+function IncomeStreamTeaser({ monthTx, totalIncome, onNavigate }: {
+  monthTx: Transaction[];
+  totalIncome: number;
+  onNavigate: () => void;
+}) {
+  const incomeTx = monthTx.filter(t => t.type === 'income');
+  const streamCount = new Set(incomeTx.map(t => t.category ?? 'lainnya')).size;
+  const avgPerTx = incomeTx.length > 0 ? Math.round(totalIncome / incomeTx.length) : 0;
+
+  return (
+    <section className="analytics-section">
+      <div className="section-header">
+        <span className="section-label">
+          <i className="fa-solid fa-money-bill-trend-up" style={{ color: 'var(--green-light)', marginRight: 6 }} />
+          Stream Pemasukkan
+        </span>
+      </div>
+      <button className="goals-teaser-card" onClick={onNavigate}>
+        <div className="goals-teaser-stats">
+          <div className="goals-teaser-stat">
+            <div className="goals-teaser-num">{incomeTx.length}</div>
+            <div className="goals-teaser-label">Transaksi</div>
+          </div>
+          <div className="goals-teaser-divider" />
+          <div className="goals-teaser-stat">
+            <div className="goals-teaser-num" style={{ color: 'var(--blue-light)' }}>{streamCount}</div>
+            <div className="goals-teaser-label">Sumber</div>
+          </div>
+          <div className="goals-teaser-divider" />
+          <div className="goals-teaser-stat">
+            <div className="goals-teaser-num" style={{ color: 'var(--green-light)', fontSize: 15 }}>{formatRupiahShort(avgPerTx)}</div>
+            <div className="goals-teaser-label">Rata-rata</div>
+          </div>
+        </div>
+        <div className="goals-teaser-cta">
+          <span>Lihat detail stream pemasukkan</span>
+          <i className="fa-solid fa-arrow-right" />
+        </div>
+      </button>
+    </section>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────
 export default function AnalyticsPage() {
   const { transactions, savingsGoals, recurringExpenses } = useWallet();
@@ -311,6 +355,13 @@ export default function AnalyticsPage() {
           <BarChart bars={trendBars} />
         </div>
       </section>
+
+      {/* Income Stream Teaser */}
+      <IncomeStreamTeaser
+        monthTx={monthTx}
+        totalIncome={totalIncome}
+        onNavigate={() => router.push('/app/incomes')}
+      />
 
       {/* Goals Teaser */}
       <GoalsTeaser
