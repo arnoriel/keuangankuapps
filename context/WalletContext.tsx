@@ -7,6 +7,7 @@ import {
   AppState, IncomePeriod, IncomeCategory, ExpenseCategory, WalletType, RecurringExpense, SavingsGoal,
 } from '@/lib/types';
 import * as storage from '@/lib/storage';
+import { toLocalDateStr } from '@/lib/utils';
 import type { TransactionEditData } from '@/lib/storage';
 
 interface WalletContextType extends AppState {
@@ -32,9 +33,9 @@ interface WalletContextType extends AppState {
 const WalletContext = createContext<WalletContextType | null>(null);
 
 function computeStats(state: AppState) {
-  const today = new Date().toISOString().split('T')[0];
   const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+  const today = toLocalDateStr(now);
+  const monthStart = toLocalDateStr(new Date(now.getFullYear(), now.getMonth(), 1));
 
   let todayIncome = 0, monthIncome = 0, monthExpense = 0;
   for (const tx of state.transactions) {

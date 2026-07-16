@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { useWallet } from '@/context/WalletContext';
 import { getUserName } from '@/lib/storage';
 import { exportFinanceReportPDF } from '@/lib/pdfExport';
-import { getTodayDateStr, getMonthDateRange } from '@/lib/utils';
+import { getTodayDateStr, getMonthDateRange, toLocalDateStr } from '@/lib/utils';
 
 interface ExportSheetProps {
   onClose: () => void;
@@ -16,8 +16,8 @@ type RangePreset = 'this_month' | 'last_month' | 'all_time' | 'custom';
 
 function getLastMonthRange(): { start: string; end: string } {
   const now = new Date();
-  const start = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().split('T')[0];
-  const end = new Date(now.getFullYear(), now.getMonth(), 0).toISOString().split('T')[0];
+  const start = toLocalDateStr(new Date(now.getFullYear(), now.getMonth() - 1, 1));
+  const end = toLocalDateStr(new Date(now.getFullYear(), now.getMonth(), 0));
   return { start, end };
 }
 

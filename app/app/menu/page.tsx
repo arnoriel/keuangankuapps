@@ -198,7 +198,7 @@ export default function MenuPage() {
         </div>
       </section>
 
-      <div className="menu-version">Keuanganku v1.0</div>
+      <div className="menu-version">Keuanganku v1.2</div>
 
       <div style={{ height: 24 }} />
 

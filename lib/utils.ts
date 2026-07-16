@@ -1,3 +1,16 @@
+/**
+ * Returns YYYY-MM-DD using the browser's LOCAL date components.
+ * IMPORTANT: never use `date.toISOString().split('T')[0]` for local dates —
+ * toISOString() converts to UTC first, which shifts the date by a day
+ * whenever local time is behind/ahead of UTC (e.g. WIB/GMT+7 at night).
+ */
+export function toLocalDateStr(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 export function formatRupiah(amount: number): string {
   return new Intl.NumberFormat('id-ID', {
     style: 'currency',
@@ -20,11 +33,11 @@ export function formatTime(iso: string): string {
 
 export function formatDateAndTime(iso: string): string {
   const date = new Date(iso);
-  const dateStr = date.toISOString().split('T')[0];
-  const today = new Date().toISOString().split('T')[0];
+  const dateStr = toLocalDateStr(date);
+  const today = toLocalDateStr(new Date());
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayStr = yesterday.toISOString().split('T')[0];
+  const yesterdayStr = toLocalDateStr(yesterday);
 
   let dateLabel = '';
   if (dateStr === today) dateLabel = 'Hari Ini';
@@ -47,8 +60,8 @@ export function formatDateHeader(dateStr: string): string {
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
 
-  const t = today.toISOString().split('T')[0];
-  const y = yesterday.toISOString().split('T')[0];
+  const t = toLocalDateStr(today);
+  const y = toLocalDateStr(yesterday);
 
   if (dateStr === t) return 'Hari Ini';
   if (dateStr === y) return 'Kemarin';
@@ -59,13 +72,13 @@ export function formatDateHeader(dateStr: string): string {
 }
 
 export function getTodayDateStr(): string {
-  return new Date().toISOString().split('T')[0];
+  return toLocalDateStr(new Date());
 }
 
 export function getMonthDateRange(): { start: string; end: string } {
   const now = new Date();
-  const start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+  const start = toLocalDateStr(new Date(now.getFullYear(), now.getMonth(), 1));
+  const end = toLocalDateStr(new Date(now.getFullYear(), now.getMonth() + 1, 0));
   return { start, end };
 }
 
@@ -126,9 +139,8 @@ export function getNextDueDate(rec: { frequency: 'weekly' | 'monthly'; dueDay: n
 
   if (rec.frequency === 'monthly') {
     const thisMonth = new Date(today.getFullYear(), today.getMonth(), rec.dueDay);
-    if (thisMonth >= today) return thisMonth.toISOString().split('T')[0];
-    return new Date(today.getFullYear(), today.getMonth() + 1, rec.dueDay)
-      .toISOString().split('T')[0];
+    if (thisMonth >= today) return toLocalDateStr(thisMonth);
+    return toLocalDateStr(new Date(today.getFullYear(), today.getMonth() + 1, rec.dueDay));
   } else {
     // dueDay 1=Mon..7=Sun → JS getDay 0=Sun..6=Sat
     const targetDow = rec.dueDay === 7 ? 0 : rec.dueDay;
@@ -136,7 +148,7 @@ export function getNextDueDate(rec: { frequency: 'weekly' | 'monthly'; dueDay: n
     if (diff <= 0) diff += 7;
     const next = new Date(today);
     next.setDate(today.getDate() + diff);
-    return next.toISOString().split('T')[0];
+    return toLocalDateStr(next);
   }
 }
 
@@ -159,7 +171,7 @@ export function getMonthLabel(year: number, month: number): string {
 }
 
 export function getMonthRange(year: number, month: number): { start: string; end: string } {
-  const start = new Date(year, month, 1).toISOString().split('T')[0];
-  const end = new Date(year, month + 1, 0).toISOString().split('T')[0];
+  const start = toLocalDateStr(new Date(year, month, 1));
+  const end = toLocalDateStr(new Date(year, month + 1, 0));
   return { start, end };
 }

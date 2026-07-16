@@ -2,6 +2,7 @@ import {
   AppState, Transaction, IncomePeriod, WalletType,
   IncomeCategory, ExpenseCategory, RecurringExpense, SavingsGoal,
 } from './types';
+import { toLocalDateStr } from './utils';
 
 const KEY = 'rider_wallet_v1';
 
@@ -91,7 +92,7 @@ export function addIncome(
     period,
     category,
     note: note?.trim() || undefined,
-    date: now.toISOString().split('T')[0],
+    date: toLocalDateStr(now),
     createdAt: now.toISOString(),
   };
   const next: AppState = {
@@ -118,7 +119,7 @@ export function addExpense(
     wallet,
     note: note.trim() || 'Pengeluaran',
     category,
-    date: now.toISOString().split('T')[0],
+    date: toLocalDateStr(now),
     createdAt: now.toISOString(),
   };
   const next: AppState = {
@@ -156,7 +157,7 @@ export function transferFunds(amount: number, from: WalletType, to: WalletType):
     amount,
     wallet: to,
     note: `Transfer ke Saldo ${toLabel}`,
-    date: now.toISOString().split('T')[0],
+    date: toLocalDateStr(now),
     createdAt: now.toISOString(),
   };
   const next: AppState = {
