@@ -8,6 +8,7 @@ import ChangePinSheet from '@/components/ChangePinSheet';
 import BiometricSheet from '@/components/BiometricSheet';
 import HelpSheet from '@/components/HelpSheet';
 import ExportSheet from '@/components/ExportSheet';
+import BackupSheet from '@/components/BackupSheet';
 
 type SaveStatus = 'idle' | 'saving' | 'saved';
 
@@ -21,6 +22,7 @@ export default function MenuPage() {
   const [showBiometricSheet, setShowBiometricSheet] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [showExport, setShowExport] = useState(false);
+  const [showBackup, setShowBackup] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -185,6 +187,19 @@ export default function MenuPage() {
 
           <div className="menu-divider" />
 
+          <button className="menu-item" onClick={() => setShowBackup(true)}>
+            <div className="menu-item-icon menu-item-icon-brand">
+              <i className="fa-solid fa-database" />
+            </div>
+            <div className="menu-item-body">
+              <div className="menu-item-title">Export &amp; Import Data</div>
+              <div className="menu-item-sub">Backup atau pulihkan seluruh data aplikasi</div>
+            </div>
+            <i className="fa-solid fa-chevron-right menu-item-chevron" />
+          </button>
+
+          <div className="menu-divider" />
+
           <button className="menu-item" onClick={() => setShowHelp(true)}>
             <div className="menu-item-icon menu-item-icon-amber">
               <i className="fa-solid fa-circle-question" />
@@ -222,6 +237,13 @@ export default function MenuPage() {
 
       {showExport && (
         <ExportSheet onClose={() => setShowExport(false)} />
+      )}
+
+      {showBackup && (
+        <BackupSheet
+          onClose={() => setShowBackup(false)}
+          onRestored={() => window.location.reload()}
+        />
       )}
     </>
   );
