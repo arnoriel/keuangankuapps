@@ -48,6 +48,12 @@
   --red-glow:       rgba(239, 68, 68, 0.22);
   --red-subtle:     rgba(239, 68, 68, 0.09);
 
+  /* Orange — highlight & "today" accents */
+  --orange:         #F59E0B;
+  --orange-dark:    #D97706;
+  --orange-glow:    rgba(245, 158, 11, 0.22);
+  --orange-subtle:  rgba(245, 158, 11, 0.09);
+
   /* Wallet card — deep navy gradients */
   --card-green-a:   #0EA070;
   --card-green-b:   #065F46;
