@@ -11,6 +11,7 @@ import {
   getIncomeCategory, getExpenseCategory,
 } from '@/lib/utils';
 import { Transaction } from '@/lib/types';
+import PortfolioCard from '@/components/PortfolioCard';
 
 // ─── Donut Chart ──────────────────────────────────────────────────────────
 interface Segment { label: string; value: number; color: string; }
@@ -166,7 +167,7 @@ function IncomeStreamTeaser({ monthTx, totalIncome, onNavigate }: {
 
 // ─── Main Page ────────────────────────────────────────────────────────────
 export default function AnalyticsPage() {
-  const { transactions, savingsGoals, recurringExpenses } = useWallet();
+  const { transactions, savingsGoals, recurringExpenses, totalSaldo } = useWallet();
   const router = useRouter();
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
@@ -287,6 +288,9 @@ export default function AnalyticsPage() {
           </div>
         </div>
       </section>
+
+      {/* Portfolio Card */}
+      <PortfolioCard transactions={transactions} totalSaldo={totalSaldo} />
 
       {/* Income Breakdown */}
       {totalIncome > 0 && (
