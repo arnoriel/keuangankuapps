@@ -16,12 +16,19 @@
 
   /* === CORE PALETTE === */
   /* Page bg — very slightly warm white, not flat */
-  --bg-page:       #F6F7FB;
-  --bg-card:       #FFFFFF;
-  --bg-card-2:     #F1F3FA;
-  --bg-elevated:   #E8ECF4;
-  --bg-modal:      #FFFFFF;
-  --bg-input:      #F1F3FA;
+  --bg-page:       #F3F2FB;
+  --bg-card:       rgba(255, 255, 255, 0.75);
+  --bg-card-2:     rgba(241, 243, 250, 0.75);
+  --bg-elevated:   rgba(232, 236, 244, 0.78);
+  --bg-modal:      rgba(255, 255, 255, 0.90);
+  --bg-input:      rgba(241, 243, 250, 0.80);
+
+  /* Glass system — lightweight blur, ~75% opacity surfaces */
+  --glass-blur:      10px;
+  --glass-blur-lg:    16px;
+  --glass-border:     rgba(255, 255, 255, 0.55);
+  --glass-border-dark: rgba(255, 255, 255, 0.14);
+  --glass-shine:      rgba(255, 255, 255, 0.35);
 
   /* Brand — vivid teal/emerald replaces generic orange */
   --brand:          #5B6AF0;
@@ -67,9 +74,9 @@
   --text-4:   #9CA3AF;
   --text-inv: #FFFFFF;
 
-  /* Borders */
-  --border:       rgba(0, 0, 0, 0.07);
-  --border-2:     rgba(0, 0, 0, 0.11);
+  /* Borders — overridden per-theme by theme engine at runtime */
+  --border:       rgba(255, 255, 255, 0.5);
+  --border-2:     rgba(255, 255, 255, 0.65);
   --border-focus: rgba(91, 106, 240, 0.45);
 
   /* Radius */
@@ -109,9 +116,47 @@ body {
   overflow-x: hidden;
   min-height: 100dvh;
   background-image:
-    radial-gradient(ellipse 700px 500px at 60% -80px, rgba(91,106,240,0.06) 0%, transparent 70%),
-    radial-gradient(ellipse 500px 400px at 0% 70%, rgba(16,185,129,0.04) 0%, transparent 60%);
+    radial-gradient(ellipse 600px 460px at 88% -60px, rgba(91,106,240,0.20) 0%, transparent 68%),
+    radial-gradient(ellipse 520px 420px at -10% 18%, rgba(139,92,246,0.16) 0%, transparent 65%),
+    radial-gradient(ellipse 460px 400px at 100% 55%, rgba(16,185,129,0.10) 0%, transparent 62%),
+    radial-gradient(ellipse 500px 420px at 10% 92%, rgba(91,106,240,0.10) 0%, transparent 65%);
   background-attachment: fixed;
+}
+
+/* =====================
+   LIGHTWEIGHT GLASSMORPHISM
+   Applied broadly via the shared card tokens so every
+   surface using --bg-card / --bg-card-2 / --bg-elevated
+   automatically gets a soft glass look. Single blur pass
+   only (no double-layered blur) to stay cheap on mobile GPUs.
+   ===================== */
+.chart-card,
+.stat-card,
+.goals-teaser-card,
+.portfolio-card,
+.card-menu-dropdown,
+.month-selector,
+.empty-state-icon,
+.history-summary-card,
+.goals-summary-card,
+.obligation-card,
+.goal-card,
+.incomes-total-card,
+.menu-name-display,
+.menu-item,
+.calc-display,
+.calc-btn,
+.tx-item {
+  backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+}
+
+.bottom-nav,
+.sheet,
+.modal,
+.card-menu-dropdown {
+  backdrop-filter: blur(var(--glass-blur-lg)) saturate(160%);
+  -webkit-backdrop-filter: blur(var(--glass-blur-lg)) saturate(160%);
 }
 
 button { cursor: pointer; font-family: var(--font); border: none; }

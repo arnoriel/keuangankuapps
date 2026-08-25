@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useWallet } from '@/context/WalletContext';
+import { haptics } from '@/lib/haptics';
 import { formatRupiah, parseAmountInput } from '@/lib/utils';
 
 interface Props {
@@ -31,6 +32,7 @@ export default function TransferModal({ onClose }: Props) {
   const canSubmit = amount > 0 && amount <= fromBalance;
 
   function handleSwap() {
+    haptics.light();
     setIsSwapping(true);
     setTimeout(() => {
       setDirection((d) => (d === 'to-tabungan' ? 'to-pegangan' : 'to-tabungan'));
@@ -50,8 +52,12 @@ export default function TransferModal({ onClose }: Props) {
   }
 
   function handleSubmit() {
-    if (!canSubmit) return;
+    if (!canSubmit) {
+      if (isInsufficient) haptics.warning();
+      return;
+    }
     transfer(amount, fromWallet, toWallet);
+    haptics.success();
     setDone(true);
     setTimeout(() => onClose(), 1800);
   }

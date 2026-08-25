@@ -15,6 +15,8 @@ interface WalletContextType extends AppState {
   todayIncome: number;
   monthIncome: number;
   monthExpense: number;
+  /** false selagi state awal belum selesai dibaca dari localStorage */
+  isReady: boolean;
   refreshState: () => void;
   addIncome: (amount: number, period: IncomePeriod, category?: IncomeCategory, note?: string) => void;
   addExpense: (amount: number, note: string, category?: ExpenseCategory, wallet?: WalletType) => void;
@@ -22,6 +24,8 @@ interface WalletContextType extends AppState {
   editSaldo: (wallet: 'pegangan' | 'tabungan', newAmount: number) => void;
   updateTransaction: (id: string, data: TransactionEditData) => void;
   deleteTransaction: (id: string) => void;
+  /** Re-read state dari localStorage — dipakai pull-to-refresh */
+  hardRefresh: () => Promise<void>;
   addRecurring: (data: Omit<RecurringExpense, 'id' | 'createdAt'>) => void;
   toggleRecurring: (id: string) => void;
   deleteRecurring: (id: string) => void;
@@ -53,11 +57,23 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     saldoPegangan: 0, saldoTabungan: 0,
     transactions: [], recurringExpenses: [], savingsGoals: [],
   });
+  const [isReady, setIsReady] = useState(false);
 
-  useEffect(() => { setWalletState(storage.getState()); }, []);
+  useEffect(() => {
+    setWalletState(storage.getState());
+    setIsReady(true);
+  }, []);
 
   // Dipanggil setelah onboarding selesai supaya saldo langsung ter-sync
   const refreshState = useCallback(() => {
+    setWalletState(storage.getState());
+  }, []);
+
+  // Dipanggil oleh pull-to-refresh — re-read dari localStorage dengan
+  // delay minimum kecil supaya animasi refresh kerasa natural, bukan
+  // instan (yang malah kerasa "tidak ngapa-ngapain").
+  const hardRefresh = useCallback(async () => {
+    await new Promise((res) => setTimeout(res, 550));
     setWalletState(storage.getState());
   }, []);
 
@@ -116,7 +132,9 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       ...walletState,
       totalSaldo: walletState.saldoPegangan + walletState.saldoTabungan,
       ...stats,
+      isReady,
       refreshState,
+      hardRefresh,
       addIncome, addExpense, transfer, editSaldo,
       updateTransaction, deleteTransaction,
       addRecurring, toggleRecurring, deleteRecurring,

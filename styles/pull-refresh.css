@@ -1,0 +1,43 @@
+/* ===================================================
+   PULL TO REFRESH
+   =================================================== */
+
+/* Wrapper ini TIDAK jadi scroll container sendiri — scroll container
+   sebenarnya adalah `.page` (dikelola AppShell). Wrapper hanya mengelola
+   gesture pull + indicator visual di atas konten. */
+.ptr-container {
+  position: relative;
+}
+
+.ptr-indicator-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
+.ptr-spinner {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--brand);
+  font-size: 14px;
+  will-change: transform;
+}
+
+.ptr-spinner-active {
+  animation: ptr-spin 0.7s linear infinite;
+}
+
+@keyframes ptr-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}

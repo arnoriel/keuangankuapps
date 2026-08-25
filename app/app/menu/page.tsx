@@ -4,6 +4,8 @@ import '@/styles/menu.css';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { getUserName, setUserName as persistUserName } from '@/lib/storage';
 import { isBiometricActive, isBiometricCapable, removeWebAuthn } from '@/lib/security';
+import { isCurrentThemeDark, toggleDarkMode } from '@/lib/theme';
+import { haptics } from '@/lib/haptics';
 import ChangePinSheet from '@/components/ChangePinSheet';
 import BiometricSheet from '@/components/BiometricSheet';
 import HelpSheet from '@/components/HelpSheet';
@@ -25,6 +27,7 @@ export default function MenuPage() {
   const [showExport, setShowExport] = useState(false);
   const [showBackup, setShowBackup] = useState(false);
   const [showTheme, setShowTheme] = useState(false);
+  const [isDark, setIsDark] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -33,6 +36,7 @@ export default function MenuPage() {
     setName(getUserName());
     isBiometricActive().then(setBiometricOn);
     isBiometricCapable().then(setBiometricCapable);
+    setIsDark(isCurrentThemeDark());
   }, []);
 
   useEffect(() => {
@@ -77,6 +81,12 @@ export default function MenuPage() {
     } else {
       setShowBiometricSheet(true);
     }
+  }
+
+  function handleDarkModeToggle() {
+    haptics.light();
+    toggleDarkMode();
+    setIsDark(isCurrentThemeDark());
   }
 
   return (
@@ -176,6 +186,23 @@ export default function MenuPage() {
         <div className="menu-section-label">Lainnya</div>
 
         <div className="menu-list">
+          <button className="menu-item" onClick={handleDarkModeToggle}>
+            <div className={`menu-item-icon ${isDark ? 'menu-item-icon-brand' : 'menu-item-icon-amber'}`}>
+              <i className={isDark ? 'fa-solid fa-moon' : 'fa-solid fa-sun'} />
+            </div>
+            <div className="menu-item-body">
+              <div className="menu-item-title">Mode Gelap</div>
+              <div className="menu-item-sub">
+                {isDark ? 'Sedang aktif — tap untuk mode terang' : 'Tap untuk aktifkan tampilan gelap'}
+              </div>
+            </div>
+            <span className={`menu-item-toggle menu-item-toggle-dark ${isDark ? 'menu-item-toggle-on' : ''}`}>
+              <span className="menu-item-toggle-dot" />
+            </span>
+          </button>
+
+          <div className="menu-divider" />
+
           <button className="menu-item" onClick={() => setShowTheme(true)}>
             <div className="menu-item-icon menu-item-icon-brand">
               <i className="fa-solid fa-palette" />
@@ -228,7 +255,7 @@ export default function MenuPage() {
         </div>
       </section>
 
-      <div className="menu-version">Keuanganku v1.2</div>
+      <div className="menu-version">Keuanganku v1.3</div>
 
       <div style={{ height: 24 }} />
 

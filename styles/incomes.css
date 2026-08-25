@@ -9,7 +9,7 @@
 }
 .incomes-header > div { flex: 1; }
 
-/* Period Tabs */
+/* Period Tabs — solid, not glass (small text needs full contrast) */
 .incomes-period-tabs {
   display: flex;
   gap: 8px;
@@ -31,6 +31,7 @@
   font-weight: 700;
   color: var(--text-3);
   font-family: var(--font);
+  background: transparent;
   transition: all 0.18s ease;
 }
 

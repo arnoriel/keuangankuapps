@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useRef, useCallback } from 'react';
-import { formatRupiah, formatRupiahShort } from '@/lib/utils';
+import { formatRupiah, formatRupiahShort, toLocalDateStr } from '@/lib/utils';
 import { Transaction } from '@/lib/types';
 
 // ─── Types ─────────────────────────────────────────────────────────────────
@@ -53,7 +53,7 @@ function buildDailySeries(transactions: Transaction[], initialSaldo: number): Pr
   }
 
   while (cursor.getTime() <= today.getTime()) {
-    const key = cursor.toISOString().slice(0, 10);
+    const key = toLocalDateStr(cursor);
     bal += dailyDelta[key] ?? 0;
     points.push({
       t: cursor.getTime(),

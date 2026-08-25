@@ -2,6 +2,7 @@
 
 import '@/styles/nav.css';
 import { usePathname, useRouter } from 'next/navigation';
+import { haptics } from '@/lib/haptics';
 
 interface BottomNavProps {
   onFabClick: () => void;
@@ -38,7 +39,7 @@ export default function BottomNav({ onFabClick }: BottomNavProps) {
       </button>
 
       <div className="nav-fab-wrapper">
-        <button className="nav-fab" onClick={onFabClick} aria-label="Tambah Transaksi">
+        <button className="nav-fab" onClick={() => { haptics.medium(); onFabClick(); }} aria-label="Tambah Transaksi">
           <i className="fa-solid fa-plus" />
         </button>
       </div>

@@ -179,6 +179,7 @@
   display: flex;
   align-items: center;
   padding: 3px;
+  background: var(--bg-elevated);
   transition: background 0.2s ease;
 }
 
@@ -193,6 +194,13 @@
   border-radius: 50%;
   background: #fff;
   box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Dark mode quick toggle — pakai brand color, bukan hijau, biar beda
+   makna dari toggle biometric (on/off status) */
+.menu-item-toggle-dark.menu-item-toggle-on {
+  background: var(--brand);
 }
 
 .menu-version {

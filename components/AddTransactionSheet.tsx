@@ -3,6 +3,7 @@
 import '@/styles/sheet.css';
 import { useState, useRef, useEffect } from 'react';
 import { useWallet } from '@/context/WalletContext';
+import { haptics } from '@/lib/haptics';
 import { IncomePeriod, IncomeCategory, ExpenseCategory, WalletType } from '@/lib/types';
 import { formatRupiah, parseAmountInput, INCOME_CATEGORIES, EXPENSE_CATEGORIES } from '@/lib/utils';
 
@@ -39,6 +40,10 @@ export default function AddTransactionSheet({ onClose }: Props) {
 
   function handleSubmit() {
     if (amount <= 0) return;
+    if (insufficientBalance) {
+      haptics.warning();
+      return;
+    }
     if (step === 'income') {
       addIncome(amount, period, incomeCategory);
       setSuccessMsg(`${formatRupiah(amount)} ditambahkan ke Saldo Pegangan`);
@@ -48,6 +53,7 @@ export default function AddTransactionSheet({ onClose }: Props) {
       const walletLabel = expenseWallet === 'tabungan' ? 'Saldo Tabungan' : 'Saldo Pegangan';
       setSuccessMsg(`${formatRupiah(amount)} dikurangi dari ${walletLabel}`);
     }
+    haptics.success();
     setStep('success');
     setTimeout(() => onClose(), 1800);
   }
@@ -77,14 +83,14 @@ export default function AddTransactionSheet({ onClose }: Props) {
             </div>
             <p className="sheet-subtitle">Mau catat apa hari ini?</p>
             <div className="type-grid">
-              <button className="type-card type-card-income" onClick={() => setStep('income')}>
+              <button className="type-card type-card-income" onClick={() => { haptics.light(); setStep('income'); }}>
                 <div className="type-card-icon type-icon-income"><i className="fa-solid fa-arrow-trend-up" /></div>
                 <div>
                   <div className="type-card-label">Pemasukkan</div>
                   <div className="type-card-sub">Hasil narik hari ini</div>
                 </div>
               </button>
-              <button className="type-card type-card-expense" onClick={() => setStep('expense')}>
+              <button className="type-card type-card-expense" onClick={() => { haptics.light(); setStep('expense'); }}>
                 <div className="type-card-icon type-icon-expense"><i className="fa-solid fa-arrow-trend-down" /></div>
                 <div>
                   <div className="type-card-label">Pengeluaran</div>
