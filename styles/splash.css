@@ -4,7 +4,7 @@
 .splash-screen {
   position: fixed;
   inset: 0;
-  background: linear-gradient(155deg, #FFFFFF 0%, #EEF0FF 50%, #E6F9F3 100%);
+  background: linear-gradient(155deg, var(--bg-page) 0%, var(--bg-card-2) 50%, var(--bg-elevated) 100%);
   display: flex;
   flex-direction: column;
   align-items: center;

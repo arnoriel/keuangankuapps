@@ -10,6 +10,11 @@ const config: CapacitorConfig = {
       androidTitle: 'Verifikasi Identitas',
       androidSubtitle: 'Gunakan biometrik atau PIN untuk membuka Keuanganku',
     },
+    StatusBar: {
+      overlaysWebView: false,
+      style: 'LIGHT',
+      backgroundColor: '#F6F7FB',
+    },
   },
 };
 

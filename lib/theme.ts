@@ -332,6 +332,30 @@ export function syncThemeColorMeta(): void {
     document.head.appendChild(meta);
   }
   meta.setAttribute('content', bgPage);
+
+  // Native status bar (Capacitor APK/IPA) tidak baca meta theme-color —
+  // harus di-set eksplisit lewat @capacitor/status-bar.
+  syncNativeStatusBar(bgPage, isCurrentThemeDark());
+}
+
+// Update warna & style (light/dark icon) status bar native, no-op kalau
+// bukan native platform (web/PWA) atau plugin belum ke-load.
+function syncNativeStatusBar(bgColor: string, isDark: boolean): void {
+  const w = window as any;
+  const Capacitor = w?.Capacitor;
+  if (!Capacitor?.isNativePlatform?.()) return;
+
+  const StatusBar = Capacitor.Plugins?.StatusBar;
+  if (!StatusBar) return;
+
+  try {
+    StatusBar.setBackgroundColor({ color: bgColor });
+    // Style.Dark = teks/ikon status bar putih (dipakai saat background gelap)
+    // Style.Light = teks/ikon status bar hitam (dipakai saat background terang)
+    StatusBar.setStyle({ style: isDark ? 'DARK' : 'LIGHT' });
+  } catch {
+    /* noop — plugin belum siap / platform tidak didukung */
+  }
 }
 
 // ─── APPLY TO DOM ────────────────────────────────────────────────────────
