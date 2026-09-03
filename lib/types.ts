@@ -1,4 +1,4 @@
-export type TransactionType = 'income' | 'expense' | 'transfer_out' | 'transfer_in';
+export type TransactionType = 'income' | 'expense' | 'transfer_out' | 'transfer_in' | 'adjustment';
 export type WalletType = 'pegangan' | 'tabungan';
 export type IncomePeriod = 'harian' | 'bulanan';
 export type IncomeCategory = 'gaji' | 'freelance' | 'driver' | 'jualan' | 'tunjangan' | 'pasif' | 'lainnya';

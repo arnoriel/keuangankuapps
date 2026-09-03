@@ -138,10 +138,30 @@ export function addExpense(
 export function editSaldo(wallet: WalletType, newAmount: number): AppState {
   const state = getState();
   const safeAmount = Math.max(0, Math.round(newAmount));
+  const oldAmount = wallet === 'pegangan' ? state.saldoPegangan : state.saldoTabungan;
+  const delta = safeAmount - oldAmount;
+  const now = new Date();
+
+  // Record the correction as a transaction (amount can be negative) so the
+  // portfolio history chart can account for manual balance edits instead of
+  // silently absorbing them into the series' starting point.
+  const txs = delta !== 0
+    ? [{
+        id: `tx_${Date.now()}_adj`,
+        type: 'adjustment' as const,
+        amount: delta,
+        wallet,
+        note: 'Koreksi saldo manual',
+        date: toLocalDateStr(now),
+        createdAt: now.toISOString(),
+      }, ...state.transactions]
+    : state.transactions;
+
   const next: AppState = {
     ...state,
     saldoPegangan: wallet === 'pegangan' ? safeAmount : state.saldoPegangan,
     saldoTabungan: wallet === 'tabungan' ? safeAmount : state.saldoTabungan,
+    transactions: txs,
   };
   setState(next);
   return next;

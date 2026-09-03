@@ -21,36 +21,53 @@ const RANGES: { key: RangeKey; label: string }[] = [
 // ─── Helpers ───────────────────────────────────────────────────────────────
 function startOfDay(d: Date) { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; }
 
+// Combined-wallet (pegangan + tabungan) delta for a single transaction.
+// NOTE: 'transfer_in' represents an internal move between the two wallets
+// (see lib/storage.ts transferFunds/applyTransactionEffect) — it changes the
+// split between wallets but NOT the combined total, so its net effect on the
+// portfolio total is 0. Only 'income' and 'expense' actually move the total.
+function combinedDelta(tx: Transaction): number {
+  switch (tx.type) {
+    case 'income': return tx.amount;
+    case 'expense': return -tx.amount;
+    // Manual balance correction (see editSaldo in lib/storage.ts) — amount
+    // is signed (can be negative), representing the actual change applied.
+    case 'adjustment': return tx.amount;
+    case 'transfer_in':
+    case 'transfer_out':
+    default:
+      return 0;
+  }
+}
+
 function buildDailySeries(transactions: Transaction[], initialSaldo: number): PricePoint[] {
+  const today = startOfDay(new Date());
   if (transactions.length === 0) {
-    const today = startOfDay(new Date());
     return [{ t: today.getTime(), v: initialSaldo, label: 'Hari ini' }];
   }
   const sorted = [...transactions].sort((a, b) => a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt));
   const firstDate = startOfDay(new Date(sorted[0].date));
-  const today = startOfDay(new Date());
 
-  // running balance ending at "today" == initialSaldo (current total), walk backwards
-  let running = initialSaldo;
-  const byDay: Record<string, number> = {};
-  for (let i = sorted.length - 1; i >= 0; i--) {
-    const tx = sorted[i];
-    const dayKey = tx.date;
-    if (byDay[dayKey] === undefined) byDay[dayKey] = running;
-    if (tx.type === 'income' || tx.type === 'transfer_in') running -= tx.amount;
-    else running -= -tx.amount;
+  // Aggregate each day's net effect on the COMBINED total using the same
+  // rules as the reducer in lib/storage.ts (transfers net to 0).
+  const dailyDelta: Record<string, number> = {};
+  let totalDeltaAcrossTx = 0;
+  for (const tx of sorted) {
+    const delta = combinedDelta(tx);
+    dailyDelta[tx.date] = (dailyDelta[tx.date] ?? 0) + delta;
+    totalDeltaAcrossTx += delta;
   }
-  const startingBalance = running;
+
+  // Walk forward from the balance BEFORE the first transaction's day,
+  // derived by subtracting the total known delta from the current saldo.
+  // (editSaldo corrections aren't tracked as tx deltas, so this anchors
+  // correctly to "today" and distributes the rest by actual daily flow.)
+  const startingBalance = initialSaldo - totalDeltaAcrossTx;
 
   const points: PricePoint[] = [];
   let bal = startingBalance;
   const cursor = new Date(firstDate);
   const dayMs = 86400000;
-  const dailyDelta: Record<string, number> = {};
-  for (const tx of sorted) {
-    const delta = (tx.type === 'income' || tx.type === 'transfer_in') ? tx.amount : -tx.amount;
-    dailyDelta[tx.date] = (dailyDelta[tx.date] ?? 0) + delta;
-  }
 
   while (cursor.getTime() <= today.getTime()) {
     const key = toLocalDateStr(cursor);
