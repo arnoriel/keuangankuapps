@@ -10,25 +10,6 @@
 
 .goals-header > div { flex: 1; }
 
-.goals-back-btn {
-  width: 36px; height: 36px;
-  flex-shrink: 0;
-  border-radius: var(--r-sm);
-  border: 1px solid var(--border);
-  background: var(--bg-card);
-  box-shadow: var(--shadow-xs);
-  color: var(--text-1);
-  font-size: 13px;
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.goals-back-btn:active {
-  transform: scale(0.9);
-  background: var(--bg-elevated);
-}
-
 /* =====================
    SUMMARY CARDS
    ===================== */

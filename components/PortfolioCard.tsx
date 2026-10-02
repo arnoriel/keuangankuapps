@@ -5,14 +5,14 @@ import { formatRupiah, formatRupiahShort, toLocalDateStr } from '@/lib/utils';
 import { Transaction } from '@/lib/types';
 
 // ─── Types ─────────────────────────────────────────────────────────────────
-type RangeKey = '1H' | '1M' | '3M' | '1T' | '5T' | 'ALL';
+type RangeKey = '1M' | '1B' | '3B' | '1T' | '5T' | 'ALL';
 
 interface PricePoint { t: number; v: number; label: string; }
 
 const RANGES: { key: RangeKey; label: string }[] = [
-  { key: '1H', label: '1H' },
   { key: '1M', label: '1M' },
-  { key: '3M', label: '3B' },
+  { key: '1B', label: '1B' },
+  { key: '3B', label: '3B' },
   { key: '1T', label: '1T' },
   { key: '5T', label: '5T' },
   { key: 'ALL', label: 'ALL' },
@@ -93,9 +93,9 @@ function filterRange(series: PricePoint[], range: RangeKey): PricePoint[] {
   const dayMs = 86400000;
   let cutoff = 0;
   switch (range) {
-    case '1H': cutoff = lastT - 7 * dayMs; break;
-    case '1M': cutoff = lastT - 30 * dayMs; break;
-    case '3M': cutoff = lastT - 90 * dayMs; break;
+    case '1M': cutoff = lastT - 7 * dayMs; break;
+    case '1B': cutoff = lastT - 30 * dayMs; break;
+    case '3B': cutoff = lastT - 90 * dayMs; break;
     case '1T': cutoff = lastT - 365 * dayMs; break;
     case '5T': cutoff = lastT - 5 * 365 * dayMs; break;
     case 'ALL': return series;
@@ -119,7 +119,7 @@ export default function PortfolioCard({ transactions, totalSaldo }: {
   transactions: Transaction[];
   totalSaldo: number;
 }) {
-  const [range, setRange] = useState<RangeKey>('1M');
+  const [range, setRange] = useState<RangeKey>('1B');
   const [scrubIndex, setScrubIndex] = useState<number | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
 

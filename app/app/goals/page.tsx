@@ -1,5 +1,6 @@
 'use client';
 
+import '@/styles/back-btn.css';
 import '@/styles/goals.css';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -329,7 +330,7 @@ export default function GoalsPage() {
     <>
       {/* Header with back button */}
       <header className="page-header goals-header">
-        <button className="goals-back-btn" onClick={() => router.push('/app/analytics')}>
+        <button className="back-btn" onClick={() => router.push('/app/analytics')}>
           <i className="fa-solid fa-chevron-left" />
         </button>
         <div>

@@ -22,12 +22,20 @@ export default function AddTransactionSheet({ onClose }: Props) {
   const [note, setNote] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const submittedRef = useRef(false);
 
   useEffect(() => {
-    if (step === 'income' || step === 'expense') {
-      setTimeout(() => inputRef.current?.focus(), 100);
-    }
+    if (step !== 'income' && step !== 'expense') return;
+    const t = setTimeout(() => inputRef.current?.focus(), 100);
+    return () => clearTimeout(t);
   }, [step]);
+
+  // Batalkan auto-close kalau sheet di-unmount lebih awal (mis. user tap overlay
+  // lalu buka sheet baru) — kalau tidak, timer lama menutup sheet yang baru.
+  useEffect(() => () => {
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+  }, []);
 
   const amount = parseAmountInput(rawAmount);
 
@@ -39,11 +47,12 @@ export default function AddTransactionSheet({ onClose }: Props) {
   }
 
   function handleSubmit() {
-    if (amount <= 0) return;
+    if (amount <= 0 || submittedRef.current) return;
     if (insufficientBalance) {
       haptics.warning();
       return;
     }
+    submittedRef.current = true;
     if (step === 'income') {
       addIncome(amount, period, incomeCategory);
       setSuccessMsg(`${formatRupiah(amount)} ditambahkan ke Saldo Pegangan`);
@@ -55,7 +64,7 @@ export default function AddTransactionSheet({ onClose }: Props) {
     }
     haptics.success();
     setStep('success');
-    setTimeout(() => onClose(), 1800);
+    closeTimerRef.current = setTimeout(onClose, 1800);
   }
 
   function handleBack() {

@@ -1,5 +1,6 @@
 'use client';
 
+import '@/styles/back-btn.css';
 import '@/styles/incomes.css';
 import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
@@ -205,7 +206,7 @@ export default function IncomesPage() {
   return (
     <>
       <header className="page-header incomes-header">
-        <button className="goals-back-btn" onClick={() => router.push('/app/analytics')}>
+        <button className="back-btn" onClick={() => router.push('/app/analytics')}>
           <i className="fa-solid fa-chevron-left" />
         </button>
         <div>
