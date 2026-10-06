@@ -1,6 +1,5 @@
 'use client';
 
-import '@/styles/back-btn.css';
 import '@/styles/incomes.css';
 import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';

@@ -1,42 +1,6 @@
 /* =====================
    ANALYTICS PAGE
    ===================== */
-.month-selector {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: var(--bg-card);
-  border-radius: var(--r-lg);
-  padding: 10px 14px;
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--border);
-}
-
-.month-nav-btn {
-  background: var(--bg-card-2);
-  border: 1px solid var(--border);
-  width: 34px; height: 34px;
-  border-radius: 10px;
-  display: flex; align-items: center; justify-content: center;
-  color: var(--text-3);
-  font-size: 13px;
-  transition: all 0.15s;
-}
-.month-nav-btn:active { transform: scale(0.9); background: var(--bg-elevated); }
-
-.month-label {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--text-1);
-  text-transform: capitalize;
-  letter-spacing: -0.2px;
-}
-
-.analytics-section {
-  padding: 0 16px;
-  margin-bottom: 16px;
-}
-
 /* =====================
    STAT CARDS
    ===================== */
@@ -79,18 +43,6 @@
   justify-content: center;
   width: 72px; height: 72px;
   border-radius: 50%;
-}
-
-/* =====================
-   CHART CARD
-   ===================== */
-.chart-card {
-  background: var(--bg-card);
-  border-radius: var(--r-lg);
-  padding: 16px;
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--border);
-  margin-top: 8px;
 }
 
 .chart-row {

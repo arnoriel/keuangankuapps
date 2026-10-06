@@ -1,3 +1,6 @@
+import '@/styles/shared.css';
+import '@/styles/back-btn.css';
+import '@/styles/sheet.css';
 import { WalletProvider } from '@/context/WalletContext';
 import AppShell from '@/components/AppShell';
 

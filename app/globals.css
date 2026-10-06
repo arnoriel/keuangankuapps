@@ -61,6 +61,15 @@
   --orange-glow:    rgba(245, 158, 11, 0.22);
   --orange-subtle:  rgba(245, 158, 11, 0.09);
 
+  /* Blue — info accents (previously undefined → icons lost color) */
+  --blue-from:      #5B6AF0;
+  --blue-light:     #7A87FF;
+
+  /* Aliases used by calculator/backup styles */
+  --text-muted:     var(--text-4);
+  --border-green:   rgba(16, 185, 129, 0.35);
+  --border-red:     rgba(239, 68, 68, 0.35);
+
   /* Wallet card — deep navy gradients */
   --card-green-a:   #0EA070;
   --card-green-b:   #065F46;

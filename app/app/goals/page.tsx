@@ -1,6 +1,5 @@
 'use client';
 
-import '@/styles/back-btn.css';
 import '@/styles/goals.css';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
