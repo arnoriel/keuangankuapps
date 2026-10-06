@@ -330,7 +330,7 @@ export default function GoalsPage() {
     <>
       {/* Header with back button */}
       <header className="page-header goals-header">
-        <button className="back-btn" onClick={() => router.push('/app/analytics')}>
+        <button className="back-btn" onClick={() => router.push('/app')}>
           <i className="fa-solid fa-chevron-left" />
         </button>
         <div>

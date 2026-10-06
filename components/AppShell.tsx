@@ -5,6 +5,7 @@ import BottomNav from './BottomNav';
 import AddTransactionSheet from './AddTransactionSheet';
 import SplashScreen from './SplashScreen';
 import LockScreen from './LockScreen';
+import AccountWelcomeOverlay from './AccountWelcomeOverlay';
 import { useLockState } from '@/hooks/useLockState';
 import { useWallet } from '@/context/WalletContext';
 
@@ -28,6 +29,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="app-root">
       <SplashScreen />
+      <AccountWelcomeOverlay />
       <div className="page">
         {children}
       </div>

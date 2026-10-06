@@ -39,6 +39,11 @@ const HELP_ITEMS: { icon: string; title: string; desc: string }[] = [
     desc: 'Di halaman Menu, tekan nama kamu di bagian atas untuk mengubahnya. Perubahan tersimpan otomatis.',
   },
   {
+    icon: 'fa-users',
+    title: 'Pindah Akun',
+    desc: 'Di halaman Menu, tekan "Pindah Akun" untuk berganti ke akun lain (mis. akun adik/anak) atau menambah akun baru. Setiap akun punya saldo dan riwayat sendiri; PIN tetap satu.',
+  },
+  {
     icon: 'fa-lock',
     title: 'PIN & Biometrik',
     desc: 'Atur ulang PIN keamanan atau aktifkan sidik jari / Face ID melalui halaman Menu agar buka aplikasi lebih cepat dan aman.',

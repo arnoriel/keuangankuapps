@@ -1,10 +1,19 @@
 import {
   AppState, Transaction, IncomePeriod, WalletType,
   IncomeCategory, ExpenseCategory, RecurringExpense, SavingsGoal,
+  Account, AccountView,
 } from './types';
 import { toLocalDateStr } from './utils';
 
+// Key data akun utama dipertahankan agar data lama tetap terbaca (tanpa migrasi).
+// Akun tambahan memakai key `${KEY}__<accountId>`.
 const KEY = 'rider_wallet_v1';
+export const ACCOUNT_DATA_PREFIX = `${KEY}__`;
+export const ACCOUNTS_KEY        = 'keuanganku_accounts';
+export const ACTIVE_ACCOUNT_KEY  = 'keuanganku_active_account';
+export const MAIN_ACCOUNT_ID     = 'main';
+export const MAX_ACCOUNTS        = 10; // termasuk akun utama
+
 
 // ─── ONBOARDING ────────────────────────────────────────────────────────────
 const ONBOARDING_DONE_KEY = 'keuanganku_onboarding_done';
@@ -15,14 +24,112 @@ export function isOnboardingComplete(): boolean {
   catch { return false; }
 }
 
+/** Nama akun yang sedang aktif (akun utama → nama profil, akun lain → nama akun). */
 export function getUserName(): string {
-  try { return localStorage.getItem(USER_NAME_KEY) ?? ''; }
-  catch { return ''; }
+  try {
+    const id = getActiveAccountId();
+    if (id === MAIN_ACCOUNT_ID) return localStorage.getItem(USER_NAME_KEY) ?? '';
+    return readSubAccounts().find(a => a.id === id)?.name ?? '';
+  } catch { return ''; }
 }
 
+/** Ubah nama akun yang sedang aktif. */
 export function setUserName(name: string): void {
-  try { localStorage.setItem(USER_NAME_KEY, name.trim()); }
-  catch { /* noop */ }
+  try {
+    const trimmed = name.trim();
+    const id = getActiveAccountId();
+    if (id === MAIN_ACCOUNT_ID) { localStorage.setItem(USER_NAME_KEY, trimmed); return; }
+    writeSubAccounts(readSubAccounts().map(a => (a.id === id ? { ...a, name: trimmed } : a)));
+  } catch { /* noop */ }
+}
+
+// ─── MULTI ACCOUNT ─────────────────────────────────────────────────────────
+
+function readSubAccounts(): Account[] {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(ACCOUNTS_KEY) ?? '[]');
+    return Array.isArray(parsed)
+      ? parsed.filter((a): a is Account => !!a && typeof a.id === 'string' && typeof a.name === 'string')
+      : [];
+  } catch { return []; }
+}
+
+function writeSubAccounts(accounts: Account[]): void {
+  localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
+}
+
+function walletKey(accountId: string): string {
+  return accountId === MAIN_ACCOUNT_ID ? KEY : `${ACCOUNT_DATA_PREFIX}${accountId}`;
+}
+
+/** ID akun aktif. Jika akun yang tersimpan sudah tidak ada, otomatis kembali ke akun utama. */
+export function getActiveAccountId(): string {
+  if (typeof window === 'undefined') return MAIN_ACCOUNT_ID;
+  try {
+    const id = localStorage.getItem(ACTIVE_ACCOUNT_KEY);
+    if (id && id !== MAIN_ACCOUNT_ID && readSubAccounts().some(a => a.id === id)) return id;
+  } catch { /* noop */ }
+  return MAIN_ACCOUNT_ID;
+}
+
+/** Semua akun — akun utama selalu pertama. */
+export function listAccounts(): AccountView[] {
+  const main: AccountView = {
+    id: MAIN_ACCOUNT_ID,
+    name: (typeof window !== 'undefined' && localStorage.getItem(USER_NAME_KEY)) || 'Akun Utama',
+    createdAt: '',
+    isMain: true,
+  };
+  if (typeof window === 'undefined') return [main];
+  return [main, ...readSubAccounts().map(a => ({ ...a, isMain: false }))];
+}
+
+export function switchAccount(id: string): void {
+  if (!listAccounts().some(a => a.id === id)) return;
+  localStorage.setItem(ACTIVE_ACCOUNT_KEY, id);
+}
+
+export type AccountNameError = 'empty' | 'duplicate' | 'limit' | null;
+
+export function validateAccountName(name: string): AccountNameError {
+  const trimmed = name.trim();
+  if (!trimmed) return 'empty';
+  if (listAccounts().length >= MAX_ACCOUNTS) return 'limit';
+  const lower = trimmed.toLowerCase();
+  if (listAccounts().some(a => a.name.trim().toLowerCase() === lower)) return 'duplicate';
+  return null;
+}
+
+/** Buat akun baru + saldo awal, lalu langsung aktifkan. Mengembalikan null jika nama tidak valid. */
+export function createAccount(name: string, saldoPegangan: number, saldoTabungan: number): Account | null {
+  if (validateAccountName(name)) return null;
+  const account: Account = {
+    id: `acc_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+    name: name.trim(),
+    createdAt: new Date().toISOString(),
+  };
+  writeSubAccounts([...readSubAccounts(), account]);
+  localStorage.setItem(
+    walletKey(account.id),
+    JSON.stringify({ ...defaultState, saldoPegangan, saldoTabungan }),
+  );
+  localStorage.setItem(ACTIVE_ACCOUNT_KEY, account.id);
+  return account;
+}
+
+/** Hapus akun tambahan beserta seluruh datanya. Akun utama tidak bisa dihapus. */
+export function deleteAccount(id: string): void {
+  if (id === MAIN_ACCOUNT_ID) return;
+  const wasActive = getActiveAccountId() === id;
+  writeSubAccounts(readSubAccounts().filter(a => a.id !== id));
+  localStorage.removeItem(walletKey(id));
+  if (wasActive) localStorage.setItem(ACTIVE_ACCOUNT_KEY, MAIN_ACCOUNT_ID);
+}
+
+/** Total saldo (pegangan + tabungan) sebuah akun — untuk ringkasan di daftar akun. */
+export function getAccountTotal(id: string): number {
+  const st = readState(id);
+  return st.saldoPegangan + st.saldoTabungan;
 }
 
 export function saveOnboarding(
@@ -32,6 +139,7 @@ export function saveOnboarding(
 ): AppState {
   localStorage.setItem(USER_NAME_KEY, name.trim());
   localStorage.setItem(ONBOARDING_DONE_KEY, 'true');
+  localStorage.setItem(ACTIVE_ACCOUNT_KEY, MAIN_ACCOUNT_ID); // onboarding selalu untuk akun utama
 
   // Tulis saldo awal ke AppState
   const state = getState();
@@ -54,10 +162,10 @@ const defaultState: AppState = {
   savingsGoals: [],
 };
 
-export function getState(): AppState {
+function readState(accountId: string): AppState {
   if (typeof window === 'undefined') return defaultState;
   try {
-    const raw = localStorage.getItem(KEY);
+    const raw = localStorage.getItem(walletKey(accountId));
     if (!raw) return defaultState;
     const parsed = JSON.parse(raw);
     return {
@@ -71,9 +179,14 @@ export function getState(): AppState {
   }
 }
 
+/** State akun yang sedang aktif. */
+export function getState(): AppState {
+  return readState(getActiveAccountId());
+}
+
 export function setState(state: AppState): void {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(KEY, JSON.stringify(state));
+  localStorage.setItem(walletKey(getActiveAccountId()), JSON.stringify(state));
 }
 
 export function addIncome(

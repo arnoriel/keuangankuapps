@@ -1,0 +1,137 @@
+/* Pindah Akun / Multiple Account */
+.acc-list { display: flex; flex-direction: column; gap: 10px; }
+
+.acc-item {
+  display: flex;
+  align-items: center;
+  background: var(--bg-card-2);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-xl);
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+.acc-item-active { border-color: var(--brand); background: var(--brand-subtle); }
+
+.acc-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  background: none;
+  border: none;
+  text-align: left;
+  font-family: var(--font);
+}
+.acc-main:active { opacity: 0.7; }
+
+.acc-avatar {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--brand-subtle);
+  color: var(--brand);
+  font-size: 16px;
+}
+
+.acc-body { flex: 1; min-width: 0; }
+.acc-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.acc-sub { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+
+.acc-badge {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--brand);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.acc-delete {
+  width: 40px;
+  height: 40px;
+  margin-right: 8px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  background: none;
+  border: none;
+  color: var(--red-dark);
+  font-size: 14px;
+}
+.acc-delete:active { background: var(--red-subtle); }
+
+.acc-confirm { flex: 1; padding: 14px; }
+.acc-confirm-text { font-size: 13px; color: var(--text-2, var(--text-1)); line-height: 1.5; }
+.acc-confirm-actions { display: flex; gap: 8px; margin-top: 12px; }
+.acc-btn-ghost,
+.acc-btn-danger {
+  flex: 1;
+  padding: 10px;
+  border-radius: var(--r-lg);
+  font-size: 13px;
+  font-weight: 700;
+  font-family: var(--font);
+}
+.acc-btn-ghost { background: none; border: 1.5px solid var(--border); color: var(--text-3); }
+.acc-btn-danger { background: var(--red-dark); border: none; color: #fff; }
+
+.acc-steps { display: flex; justify-content: center; gap: 6px; margin: 4px 0 14px; }
+.acc-step { width: 8px; height: 8px; border-radius: 50%; background: var(--bg-elevated); transition: all 0.2s ease; }
+.acc-step-active { width: 22px; border-radius: 4px; background: var(--brand); }
+
+/* Welcome overlay: fade in → tahan → fade out (2s) */
+.acc-welcome {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--bg-page) 92%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  animation: accWelcomeFade 2s ease both;
+}
+.acc-welcome-inner {
+  text-align: center;
+  padding: 0 24px;
+  animation: accWelcomeRise 2s cubic-bezier(0.22, 0.8, 0.3, 1) both;
+}
+.acc-welcome-icon { font-size: 44px; margin-bottom: 10px; }
+.acc-welcome-label { font-size: 15px; font-weight: 600; color: var(--text-3); letter-spacing: 0.3px; }
+.acc-welcome-name {
+  font-size: 30px;
+  font-weight: 800;
+  color: var(--text-1);
+  letter-spacing: -0.5px;
+  margin-top: 4px;
+  word-break: break-word;
+}
+
+@keyframes accWelcomeFade {
+  0%   { opacity: 0; }
+  25%  { opacity: 1; }
+  70%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes accWelcomeRise {
+  0%   { transform: translateY(12px) scale(0.97); }
+  25%  { transform: translateY(0) scale(1); }
+  100% { transform: translateY(0) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .acc-welcome-inner { animation: none; }
+}

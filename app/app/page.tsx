@@ -4,7 +4,6 @@ import '@/styles/home.css';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useWallet } from '@/context/WalletContext';
-import { getUserName } from '@/lib/storage';
 import { haptics } from '@/lib/haptics';
 import { useCountUp } from '@/hooks/useCountUp';
 import TransactionItem from '@/components/TransactionItem';
@@ -18,6 +17,14 @@ import { formatRupiah, formatRupiahShort, getGreeting, formatFullDate, getTodayD
 type CardKey = 'pegangan' | 'tabungan';
 type SlideKey = 'total' | 'pegangan' | 'tabungan';
 const SLIDES: SlideKey[] = ['total', 'pegangan', 'tabungan'];
+
+const RECENT_TX_LIMIT = 5;
+
+const FEATURES = [
+  { href: '/app/incomes',    label: 'Stream Pemasukkan',     icon: 'fa-money-bill-trend-up', color: 'var(--green-light)', bg: 'var(--green-subtle)' },
+  { href: '/app/goals',      label: 'Goals & Tagihan Rutin', icon: 'fa-bullseye',            color: 'var(--orange)',      bg: 'var(--orange-subtle)' },
+  { href: '/app/calculator', label: 'Kalkulator',            icon: 'fa-calculator',          color: 'var(--brand)',       bg: 'var(--brand-subtle)' },
+] as const;
 
 export default function DashboardPage() {
   const wallet = useWallet();
@@ -37,8 +44,6 @@ export default function DashboardPage() {
   const [activeSlide, setActiveSlide] = useState(0);
   const carouselRef = useRef<HTMLDivElement>(null);
 
-  const [userName, setUserNameState] = useState('');
-  useEffect(() => { setUserNameState(getUserName()); }, []);
 
   const peganganMenuRef = useRef<HTMLDivElement>(null);
   const tabunganMenuRef = useRef<HTMLDivElement>(null);
@@ -100,7 +105,7 @@ export default function DashboardPage() {
     setEditingCard(null);
   };
 
-  const recentTx = wallet.transactions.slice(0, 8);
+  const recentTx = wallet.transactions.slice(0, RECENT_TX_LIMIT);
   const todayStr = getTodayDateStr();
   const today = formatFullDate(todayStr);
   const greeting = getGreeting();
@@ -158,12 +163,15 @@ export default function DashboardPage() {
 
   return (
     <PullToRefresh onRefresh={wallet.hardRefresh}>
+      {/* HERO — fill tema di belakang header + card saldo */}
+      <div className="home-hero">
+        <div className="home-hero-fill" aria-hidden="true" />
       {/* HEADER */}
       <header className="page-header">
         <div>
           <div className="header-greeting">{greeting}</div>
           <div className="header-name">
-            <span className="header-name-brand">{userName || 'Keuanganku'}</span>
+            <span className="header-name-brand">{wallet.activeAccountName || 'Keuanganku'}</span>
           </div>
           <div className="header-date">{today}</div>
         </div>
@@ -325,6 +333,10 @@ export default function DashboardPage() {
           </div>
         </div>
 
+      </section>
+      </div>
+
+      <section className="saldo-meta">
         {/* Dot indicators */}
         <div className="saldo-dots">
           {SLIDES.map((s, i) => (
@@ -346,6 +358,28 @@ export default function DashboardPage() {
             <i className="fa-solid fa-arrow-right-arrow-left" />
             Transfer Dana
           </button>
+        </div>
+      </section>
+
+      {/* SEMUA FITUR */}
+      <section className="features-section">
+        <div className="features-card">
+          <div className="features-title">Semua Fitur</div>
+          <div className="features-grid">
+            {FEATURES.map((f) => (
+              <button
+                key={f.href}
+                type="button"
+                className="feature-tile"
+                onClick={() => { haptics.light(); router.push(f.href); }}
+              >
+                <span className="feature-tile-icon" style={{ background: f.bg, color: f.color }}>
+                  <i className={`fa-solid ${f.icon}`} />
+                </span>
+                <span className="feature-tile-label">{f.label}</span>
+              </button>
+            ))}
+          </div>
         </div>
       </section>
 

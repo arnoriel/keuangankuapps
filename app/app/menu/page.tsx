@@ -3,6 +3,7 @@
 import '@/styles/menu.css';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { getUserName, setUserName as persistUserName } from '@/lib/storage';
+import { useWallet } from '@/context/WalletContext';
 import { isBiometricActive, isBiometricCapable, removeWebAuthn } from '@/lib/security';
 import { isCurrentThemeDark, toggleDarkMode } from '@/lib/theme';
 import { haptics } from '@/lib/haptics';
@@ -12,10 +13,12 @@ import HelpSheet from '@/components/HelpSheet';
 import ExportSheet from '@/components/ExportSheet';
 import BackupSheet from '@/components/BackupSheet';
 import ThemeCustomizerSheet from '@/components/ThemeCustomizerSheet';
+import SwitchAccountSheet from '@/components/SwitchAccountSheet';
 
 type SaveStatus = 'idle' | 'saving' | 'saved';
 
 export default function MenuPage() {
+  const { activeAccountId, activeAccountName, accounts, refreshState } = useWallet();
   const [name, setName] = useState('');
   const [editingName, setEditingName] = useState(false);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
@@ -27,13 +30,18 @@ export default function MenuPage() {
   const [showExport, setShowExport] = useState(false);
   const [showBackup, setShowBackup] = useState(false);
   const [showTheme, setShowTheme] = useState(false);
+  const [showSwitchAccount, setShowSwitchAccount] = useState(false);
   const [isDark, setIsDark] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Nama profil mengikuti akun yang sedang aktif
   useEffect(() => {
     setName(getUserName());
+  }, [activeAccountId]);
+
+  useEffect(() => {
     isBiometricActive().then(setBiometricOn);
     isBiometricCapable().then(setBiometricCapable);
     setIsDark(isCurrentThemeDark());
@@ -56,6 +64,7 @@ export default function MenuPage() {
       const trimmed = value.trim();
       if (trimmed) {
         persistUserName(trimmed);
+        refreshState(); // sinkronkan nama di daftar akun & Beranda
         setSaveStatus('saved');
         setTimeout(() => setSaveStatus('idle'), 1500);
       } else {
@@ -137,6 +146,24 @@ export default function MenuPage() {
 
       {/* LIST OPTIONS */}
       <section className="menu-section">
+        <div className="menu-section-label">Akun</div>
+
+        <div className="menu-list">
+          <button className="menu-item" onClick={() => setShowSwitchAccount(true)}>
+            <div className="menu-item-icon menu-item-icon-green">
+              <i className="fa-solid fa-users" />
+            </div>
+            <div className="menu-item-body">
+              <div className="menu-item-title">Pindah Akun</div>
+              <div className="menu-item-sub">
+                Akun aktif: {activeAccountName || 'Akun Utama'}
+                {accounts.length > 1 ? ` · ${accounts.length} akun` : ''}
+              </div>
+            </div>
+            <i className="fa-solid fa-chevron-right menu-item-chevron" />
+          </button>
+        </div>
+
         <div className="menu-section-label">Keamanan</div>
 
         <div className="menu-list">
@@ -255,7 +282,7 @@ export default function MenuPage() {
         </div>
       </section>
 
-      <div className="menu-version">Keuanganku v1.3</div>
+      <div className="menu-version">Keuanganku v1.4</div>
 
       <div style={{ height: 24 }} />
 
@@ -285,6 +312,13 @@ export default function MenuPage() {
         <BackupSheet
           onClose={() => setShowBackup(false)}
           onRestored={() => window.location.reload()}
+        />
+      )}
+
+      {showSwitchAccount && (
+        <SwitchAccountSheet
+          onClose={() => setShowSwitchAccount(false)}
+          onChanged={() => setName(getUserName())}
         />
       )}
 

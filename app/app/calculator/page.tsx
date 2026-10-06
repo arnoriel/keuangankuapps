@@ -1,7 +1,9 @@
 'use client';
 
 import '@/styles/calculator.css';
+import '@/styles/back-btn.css';
 import { useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 type CalcMode = 'basic' | 'category';
@@ -333,14 +335,22 @@ function CategoryCalc() {
 
 // ── PAGE ───────────────────────────────────────────────────────────────────────
 export default function CalculatorPage() {
+  const router = useRouter();
   const [mode, setMode] = useState<CalcMode>('basic');
 
   return (
     <div className="page calc-page">
       {/* Header */}
       <div className="calc-header">
-        <h1 className="calc-title">Kalkulator</h1>
-        <p className="calc-subtitle">Hitung cepat & terstruktur</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+          <button className="back-btn" onClick={() => router.push('/app')} aria-label="Kembali">
+            <i className="fa-solid fa-chevron-left" />
+          </button>
+          <div>
+            <h1 className="calc-title">Kalkulator</h1>
+            <p className="calc-subtitle" style={{ marginBottom: 0 }}>Hitung cepat & terstruktur</p>
+          </div>
+        </div>
 
         {/* Mode Toggle */}
         <div className="calc-mode-toggle">

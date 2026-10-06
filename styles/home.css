@@ -429,3 +429,143 @@
 .transfer-fab-btn i { font-size: 12px; color: var(--brand); }
 .transfer-fab-btn:hover  { transform: scale(1.04); }
 .transfer-fab-btn:active { transform: scale(0.94); }
+
+/* =====================
+   SEMUA FITUR
+   ===================== */
+.features-section { padding: 18px 20px 0; }
+
+.features-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-sm);
+  padding: 16px 12px 12px;
+}
+
+.features-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-1);
+  padding: 0 6px 12px;
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.feature-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  background: none;
+  border: none;
+  padding: 6px 4px;
+  border-radius: var(--r-md);
+  font-family: var(--font);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.feature-tile:active {
+  transform: scale(0.94);
+  background: var(--brand-subtle);
+}
+
+.feature-tile-icon {
+  width: 54px;
+  height: 54px;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+}
+
+.feature-tile-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--text-2);
+  text-align: center;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+
+/* =====================
+   HOME HERO — fill tema di belakang header + card saldo
+   Fill berakhir di 80% tinggi card saldo (card 208px, padding bawah
+   carousel 24px => 24 + 0.2 * 208 ≈ 66px dari dasar hero).
+   Statis (gradient + SVG data-URI), tanpa filter/animasi => ringan.
+   ===================== */
+.home-hero {
+  position: relative;
+  isolation: isolate;
+}
+
+.home-hero > :not(.home-hero-fill) {
+  position: relative;
+  z-index: 1;
+}
+
+.home-hero-fill {
+  position: absolute !important;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 66px;
+  z-index: 0 !important;
+  pointer-events: none;
+  border-radius: 0 0 32px 32px;
+  background:
+    radial-gradient(110px circle at 88% 110px, rgba(255, 255, 255, 0.16), transparent 100%),
+    radial-gradient(140px circle at 6% 62%, rgba(0, 0, 0, 0.10), transparent 100%),
+    linear-gradient(180deg, var(--brand) 0%, var(--brand-dark) 100%);
+}
+
+/* extension ke atas: nutup gap saat pull-to-refresh / overscroll */
+.home-hero-fill::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 100%;
+  height: 320px;
+  background: var(--brand);
+}
+
+/* gelombang tipis di atas card — nuansa laut / offshore */
+.home-hero-fill::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 156px;
+  height: 56px;
+  background-repeat: repeat-x;
+  background-size: 360px 56px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 360 56'%3E%3Cpath d='M0 28C60 8 120 8 180 28S300 48 360 28V56H0Z' fill='white' fill-opacity='.10'/%3E%3Cpath d='M0 36C60 52 120 52 180 36S300 20 360 36V56H0Z' fill='white' fill-opacity='.07'/%3E%3C/svg%3E");
+}
+
+/* teks header di atas fill */
+.home-hero .header-greeting { color: rgba(255, 255, 255, 0.82); }
+.home-hero .header-name,
+.home-hero .header-name-brand { color: #fff; }
+.home-hero .header-date { color: rgba(255, 255, 255, 0.72); }
+.home-hero .header-greeting,
+.home-hero .header-name,
+.home-hero .header-date { text-shadow: 0 1px 2px rgba(0, 0, 0, 0.18); }
+
+/* skeleton di atas fill */
+.home-hero .skel-bar {
+  background: linear-gradient(100deg, rgba(255,255,255,0.18) 30%, rgba(255,255,255,0.34) 50%, rgba(255,255,255,0.18) 70%);
+  background-size: 200% 100%;
+}

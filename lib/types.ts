@@ -44,3 +44,15 @@ export interface AppState {
   recurringExpenses: RecurringExpense[];
   savingsGoals: SavingsGoal[];
 }
+
+/** Akun tambahan (mis. akun anak/adik). Akun utama bersifat implisit (id 'main'). */
+export interface Account {
+  id: string;
+  name: string;
+  createdAt: string;
+}
+
+/** Akun untuk ditampilkan di UI — termasuk akun utama. */
+export interface AccountView extends Account {
+  isMain: boolean;
+}

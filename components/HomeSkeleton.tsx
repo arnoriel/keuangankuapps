@@ -9,6 +9,8 @@ import '@/styles/skeleton.css';
 export default function HomeSkeleton() {
   return (
     <div className="skel-wrap" aria-hidden="true" aria-busy="true">
+      <div className="home-hero">
+      <div className="home-hero-fill" aria-hidden="true" />
       {/* HEADER */}
       <header className="page-header">
         <div style={{ width: '100%' }}>
@@ -23,6 +25,10 @@ export default function HomeSkeleton() {
         <div style={{ padding: '14px 20px 24px' }}>
           <div className="skel-card" />
         </div>
+      </section>
+      </div>
+
+      <section className="saldo-meta">
         <div className="saldo-dots" style={{ marginTop: -12 }}>
           <span className="skel-dot" />
           <span className="skel-dot" />

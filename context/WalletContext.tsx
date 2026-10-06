@@ -4,7 +4,7 @@ import {
   createContext, useContext, useState, useEffect, useCallback, type ReactNode,
 } from 'react';
 import {
-  AppState, IncomePeriod, IncomeCategory, ExpenseCategory, WalletType, RecurringExpense, SavingsGoal,
+  AppState, AccountView, IncomePeriod, IncomeCategory, ExpenseCategory, WalletType, RecurringExpense, SavingsGoal,
 } from '@/lib/types';
 import * as storage from '@/lib/storage';
 import { toLocalDateStr } from '@/lib/utils';
@@ -17,6 +17,16 @@ interface WalletContextType extends AppState {
   monthExpense: number;
   /** false selagi state awal belum selesai dibaca dari localStorage */
   isReady: boolean;
+  /** Multi account */
+  accounts: AccountView[];
+  activeAccountId: string;
+  activeAccountName: string;
+  /** Pemicu animasi "Selamat Datang" saat pindah/buat akun (key berubah tiap kejadian). */
+  welcome: { name: string; key: number } | null;
+  switchAccount: (id: string) => void;
+  /** Buat akun baru lalu langsung aktif. Return false jika nama tidak valid. */
+  addAccount: (name: string, saldoPegangan: number, saldoTabungan: number) => boolean;
+  removeAccount: (id: string) => void;
   refreshState: () => void;
   addIncome: (amount: number, period: IncomePeriod, category?: IncomeCategory, note?: string) => void;
   addExpense: (amount: number, note: string, category?: ExpenseCategory, wallet?: WalletType) => void;
@@ -58,24 +68,53 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     transactions: [], recurringExpenses: [], savingsGoals: [],
   });
   const [isReady, setIsReady] = useState(false);
+  const [accounts, setAccounts] = useState<AccountView[]>([]);
+  const [activeAccountId, setActiveAccountId] = useState(storage.MAIN_ACCOUNT_ID);
+
+  // Sinkronkan wallet + daftar akun + akun aktif dari localStorage
+  const syncAll = useCallback(() => {
+    setWalletState(storage.getState());
+    setAccounts(storage.listAccounts());
+    setActiveAccountId(storage.getActiveAccountId());
+  }, []);
 
   useEffect(() => {
-    setWalletState(storage.getState());
+    syncAll();
     setIsReady(true);
-  }, []);
+  }, [syncAll]);
 
   // Dipanggil setelah onboarding selesai supaya saldo langsung ter-sync
-  const refreshState = useCallback(() => {
-    setWalletState(storage.getState());
+  const refreshState = syncAll;
+
+  const [welcome, setWelcome] = useState<{ name: string; key: number } | null>(null);
+  const showWelcome = useCallback((name: string) => {
+    setWelcome({ name, key: Date.now() });
   }, []);
+
+  const switchAccount = useCallback((id: string) => {
+    storage.switchAccount(id);
+    syncAll();
+    showWelcome(storage.listAccounts().find(a => a.id === id)?.name ?? '');
+  }, [syncAll, showWelcome]);
+
+  const addAccount = useCallback((name: string, saldoPegangan: number, saldoTabungan: number) => {
+    const created = storage.createAccount(name, saldoPegangan, saldoTabungan);
+    if (created) { syncAll(); showWelcome(created.name); }
+    return !!created;
+  }, [syncAll, showWelcome]);
+
+  const removeAccount = useCallback((id: string) => {
+    storage.deleteAccount(id);
+    syncAll();
+  }, [syncAll]);
 
   // Dipanggil oleh pull-to-refresh — re-read dari localStorage dengan
   // delay minimum kecil supaya animasi refresh kerasa natural, bukan
   // instan (yang malah kerasa "tidak ngapa-ngapain").
   const hardRefresh = useCallback(async () => {
     await new Promise((res) => setTimeout(res, 550));
-    setWalletState(storage.getState());
-  }, []);
+    syncAll();
+  }, [syncAll]);
 
   const addIncome = useCallback((amount: number, period: IncomePeriod, category?: IncomeCategory, note?: string) => {
     setWalletState(storage.addIncome(amount, period, category ?? 'lainnya', note));
@@ -126,6 +165,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const stats = computeStats(walletState);
+  const activeAccountName = accounts.find(a => a.id === activeAccountId)?.name ?? '';
 
   return (
     <WalletContext.Provider value={{
@@ -133,6 +173,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       totalSaldo: walletState.saldoPegangan + walletState.saldoTabungan,
       ...stats,
       isReady,
+      accounts, activeAccountId, activeAccountName, welcome,
+      switchAccount, addAccount, removeAccount,
       refreshState,
       hardRefresh,
       addIncome, addExpense, transfer, editSaldo,

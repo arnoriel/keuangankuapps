@@ -16,7 +16,13 @@ export default function BottomNav({ onFabClick }: BottomNavProps) {
   // '/app/' ATAU '/app' tergantung environment (dev vs static export).
   // Normalisasi dulu biar perbandingan path selalu konsisten.
   const normalizedPath = pathname.length > 1 ? pathname.replace(/\/$/, '') : pathname;
-  const isActive = (path: string) => normalizedPath === path;
+  // Halaman fitur (Stream Pemasukkan, Goals, Kalkulator) dibuka dari card
+  // "Semua Fitur" di Beranda, jadi tab Beranda tetap aktif di sana.
+  const HOME_CHILDREN = ['/app/incomes', '/app/goals', '/app/calculator'];
+  const isActive = (path: string) =>
+    path === '/app'
+      ? normalizedPath === '/app' || HOME_CHILDREN.includes(normalizedPath)
+      : normalizedPath === path;
 
   return (
     <nav className="bottom-nav">
@@ -45,12 +51,12 @@ export default function BottomNav({ onFabClick }: BottomNavProps) {
       </div>
 
       <button
-        className={`nav-btn ${isActive('/app/calculator') ? 'active' : ''}`}
-        onClick={() => router.push('/app/calculator')}
-        aria-label="Kalkulator"
+        className={`nav-btn ${isActive('/app/history') ? 'active' : ''}`}
+        onClick={() => router.push('/app/history')}
+        aria-label="Riwayat"
       >
-        <i className="fa-solid fa-calculator" />
-        <span>Kalkulator</span>
+        <i className="fa-solid fa-clock-rotate-left" />
+        <span>Riwayat</span>
       </button>
 
       <button

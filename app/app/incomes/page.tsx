@@ -206,7 +206,7 @@ export default function IncomesPage() {
   return (
     <>
       <header className="page-header incomes-header">
-        <button className="back-btn" onClick={() => router.push('/app/analytics')}>
+        <button className="back-btn" onClick={() => router.push('/app')}>
           <i className="fa-solid fa-chevron-left" />
         </button>
         <div>

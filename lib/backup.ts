@@ -1,7 +1,10 @@
 // Backup & Restore seluruh localStorage aplikasi ke/dari file .json
+import { ACCOUNT_DATA_PREFIX, ACCOUNTS_KEY, ACTIVE_ACCOUNT_KEY } from './storage';
 
-const BACKUP_KEYS = [
+const STATIC_KEYS = [
   'rider_wallet_v1',
+  ACCOUNTS_KEY,
+  ACTIVE_ACCOUNT_KEY,
   'keuanganku_onboarding_done',
   'keuanganku_user_name',
   'keuanganku_pin_hash',
@@ -9,6 +12,16 @@ const BACKUP_KEYS = [
   'keuanganku_webauthn_cred_id',
   'keuanganku_webauthn_user_id',
 ] as const;
+
+/** Key statis + data tiap akun tambahan (key dinamis berawalan ACCOUNT_DATA_PREFIX). */
+function getBackupKeys(): string[] {
+  const dynamic: string[] = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k && k.startsWith(ACCOUNT_DATA_PREFIX)) dynamic.push(k);
+  }
+  return [...STATIC_KEYS, ...dynamic];
+}
 
 interface BackupFile {
   app: 'keuanganku';
@@ -19,7 +32,7 @@ interface BackupFile {
 
 export function exportBackup(): void {
   const data: Record<string, string> = {};
-  for (const key of BACKUP_KEYS) {
+  for (const key of getBackupKeys()) {
     const value = localStorage.getItem(key);
     if (value !== null) data[key] = value;
   }
@@ -96,7 +109,7 @@ export function readBackupFile(file: File): Promise<{ backup: BackupFile; previe
 
 export function restoreBackup(backup: { data: Record<string, string> }): void {
   // Hapus dulu semua key lama yang dikelola aplikasi supaya tidak ada sisa data
-  for (const key of BACKUP_KEYS) localStorage.removeItem(key);
+  for (const key of getBackupKeys()) localStorage.removeItem(key);
   // Tulis ulang dari backup
   for (const [key, value] of Object.entries(backup.data)) {
     localStorage.setItem(key, value);
