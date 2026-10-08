@@ -1,4 +1,4 @@
-const CACHE_NAME = 'keuanganku-v2';
+const CACHE_NAME = 'keuanganku-v3';
 const STATIC_ASSETS = [
   '/app',
   '/app/history',
@@ -39,15 +39,22 @@ self.addEventListener('fetch', (event) => {
     url.pathname.includes('hot-update')
   ) return;
 
-  // Cache-first for static assets (fonts, icons, manifest)
+  // Icons & manifest: network-first (cache hanya fallback offline) supaya
+  // perubahan icon langsung terlihat, tidak nyangkut di cache lama.
   if (
     url.pathname.startsWith('/icons/') ||
     url.pathname === '/manifest.json'
   ) {
     event.respondWith(
-      caches.match(event.request).then(
-        (cached) => cached || fetch(event.request)
-      )
+      fetch(event.request)
+        .then((response) => {
+          if (response && response.status === 200) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match(event.request))
     );
     return;
   }

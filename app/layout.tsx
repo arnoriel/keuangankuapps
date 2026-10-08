@@ -5,7 +5,14 @@ import { getInlineThemeScript } from '@/lib/theme';
 export const metadata: Metadata = {
   title: 'Keuanganku',
   description: 'Kelola keuangan harian dengan mudah',
-  manifest: '/manifest.json',
+  manifest: '/manifest.json?v=2',
+  icons: {
+    icon: [
+      { url: '/icons/icon-192.png?v=2', sizes: '192x192', type: 'image/png' },
+      { url: '/icons/icon-512.png?v=2', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: '/icons/icon-192.png?v=2',
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
@@ -40,7 +47,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"
           crossOrigin="anonymous"
         />
-        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <script dangerouslySetInnerHTML={{ __html: getInlineThemeScript() }} />
