@@ -1,11 +1,12 @@
 'use client';
 
 import '@/styles/home.css';
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useWallet } from '@/context/WalletContext';
 import { haptics } from '@/lib/haptics';
 import { useCountUp } from '@/hooks/useCountUp';
+import { useInfiniteCarousel } from '@/hooks/useInfiniteCarousel';
 import TransactionItem from '@/components/TransactionItem';
 import TransferModal from '@/components/TransferModal';
 import EditTransactionSheet from '@/components/EditTransactionSheet';
@@ -17,6 +18,9 @@ import { formatRupiah, formatRupiahShort, getGreeting, formatFullDate, getTodayD
 type CardKey = 'pegangan' | 'tabungan';
 type SlideKey = 'total' | 'pegangan' | 'tabungan';
 const SLIDES: SlideKey[] = ['total', 'pegangan', 'tabungan'];
+const AUTO_SLIDE_MS = 5000;
+// [clone terakhir, ...asli, clone pertama] → loop tanpa putus ke dua arah
+const LOOP_SLIDES: SlideKey[] = [SLIDES[SLIDES.length - 1], ...SLIDES, SLIDES[0]];
 
 const RECENT_TX_LIMIT = 5;
 
@@ -40,10 +44,13 @@ export default function DashboardPage() {
   const [editingCard, setEditingCard] = useState<CardKey | null>(null);
   const [editValue, setEditValue] = useState('');
 
-  // Carousel active slide
-  const [activeSlide, setActiveSlide] = useState(0);
-  const carouselRef = useRef<HTMLDivElement>(null);
-
+  // Carousel berputar + auto-geser 5 detik (pause saat ada interaksi/overlay)
+  const carousel = useInfiniteCarousel({
+    count: SLIDES.length,
+    interval: AUTO_SLIDE_MS,
+    enabled: wallet.isReady,
+    paused: !!(openMenu || editingCard || showTransfer || editingTx),
+  });
 
   const peganganMenuRef = useRef<HTMLDivElement>(null);
   const tabunganMenuRef = useRef<HTMLDivElement>(null);
@@ -70,25 +77,6 @@ export default function DashboardPage() {
   useEffect(() => {
     if (editingCard) editInputRef.current?.focus();
   }, [editingCard]);
-
-  // Track slide aktif berdasarkan scroll position (untuk dot indicator)
-  const handleCarouselScroll = useCallback(() => {
-    const el = carouselRef.current;
-    if (!el) return;
-    const idx = Math.round(el.scrollLeft / el.clientWidth);
-    const clamped = Math.min(Math.max(idx, 0), SLIDES.length - 1);
-    setActiveSlide((prev) => {
-      if (prev !== clamped) haptics.selection();
-      return clamped;
-    });
-  }, []);
-
-  const goToSlide = (idx: number) => {
-    const el = carouselRef.current;
-    if (!el) return;
-    haptics.light();
-    el.scrollTo({ left: idx * el.clientWidth, behavior: 'smooth' });
-  };
 
   const startEdit = (card: CardKey) => {
     const current = card === 'pegangan' ? wallet.saldoPegangan : wallet.saldoTabungan;
@@ -135,7 +123,7 @@ export default function DashboardPage() {
   const maskTabungan = (amount: number) =>
     hideTabungan ? '••••••' : formatRupiah(amount);
 
-  const renderCardMenu = (card: CardKey, ref: React.RefObject<HTMLDivElement | null>) => (
+  const renderCardMenu = (card: CardKey, ref?: React.RefObject<HTMLDivElement | null>) => (
     <div className="saldo-card-menu-wrap" ref={ref} style={{ position: 'relative' }}>
       <button
         className="saldo-card-icon-btn"
@@ -144,7 +132,7 @@ export default function DashboardPage() {
       >
         <i className="fa-solid fa-ellipsis-vertical" />
       </button>
-      {openMenu === card && (
+      {ref && openMenu === card && (
         <div className="saldo-card-menu-dropdown">
           <button className="saldo-card-menu-item" onClick={() => startEdit(card)}>
             <i className="fa-solid fa-pen" />
@@ -154,6 +142,126 @@ export default function DashboardPage() {
       )}
     </div>
   );
+
+  // Config card Pegangan & Tabungan (struktur identik → DRY)
+  const cardConfig = {
+    pegangan: {
+      label: 'Saldo Pegangan', icon: 'fa-wallet',
+      amount: maskPegangan(animatedPegangan),
+      hidden: hidePegangan, toggle: () => setHidePegangan((h) => !h),
+      menuRef: peganganMenuRef,
+      badgeIcon: 'fa-plus', badge: `${maskPeganganShort(animatedTodayIncome)} hari ini`,
+    },
+    tabungan: {
+      label: 'Saldo Tabungan', icon: 'fa-piggy-bank',
+      amount: maskTabungan(animatedTabungan),
+      hidden: hideTabungan, toggle: () => setHideTabungan((h) => !h),
+      menuRef: tabunganMenuRef,
+      badgeIcon: 'fa-lock', badge: 'Total tersimpan',
+    },
+  } as const;
+
+  // `clone` = salinan visual untuk loop: tanpa ref, input edit, & dropdown
+  const renderSlide = (key: SlideKey, clone: boolean) => {
+    if (key === 'total') {
+      return (
+        <div className="saldo-card saldo-card-total">
+          <div className="card-orb card-orb-1" />
+          <div className="card-orb card-orb-2" />
+
+          <div className="saldo-card-top">
+            <div>
+              <div className="saldo-card-label">
+                <i className="fa-solid fa-layer-group" />
+                Total Saldo
+              </div>
+              <div className="saldo-card-amount">{maskTotal(animatedTotal)}</div>
+            </div>
+            <button
+              className="saldo-card-icon-btn"
+              onClick={() => setHideTotal((h) => !h)}
+              aria-label={hideTotal ? 'Tampilkan total saldo' : 'Sembunyikan total saldo'}
+            >
+              <i className={hideTotal ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'} />
+            </button>
+          </div>
+
+          <div className="saldo-divider" />
+
+          <div className="saldo-quick-stats">
+            <div className="saldo-quick-stat">
+              <div className="saldo-quick-stat-label">
+                <i className="fa-solid fa-arrow-trend-up" />
+                Masuk Bulan Ini
+              </div>
+              <div className="saldo-quick-stat-value stat-income">
+                +{maskMonthIncome(animatedMonthIncome)}
+              </div>
+            </div>
+            <div className="saldo-quick-stat">
+              <div className="saldo-quick-stat-label">
+                <i className="fa-solid fa-arrow-trend-down" />
+                Keluar Bulan Ini
+              </div>
+              <div className="saldo-quick-stat-value stat-expense">
+                -{maskMonthExpense(animatedMonthExpense)}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    const cfg = cardConfig[key];
+    return (
+      <div className={`saldo-card saldo-card-${key}`}>
+        <div className="card-orb card-orb-1" />
+        <div className="card-orb card-orb-2" />
+
+        <div className="saldo-card-top">
+          <div style={{ flex: 1 }}>
+            <div className="saldo-card-label">
+              <i className={`fa-solid ${cfg.icon}`} />
+              {cfg.label}
+            </div>
+
+            {!clone && editingCard === key ? (
+              <input
+                ref={editInputRef}
+                className="saldo-card-amount-edit"
+                type="text"
+                inputMode="numeric"
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value.replace(/[^0-9]/g, ''))}
+                onBlur={commitEdit}
+                onKeyDown={(e) => { if (e.key === 'Enter') editInputRef.current?.blur(); }}
+              />
+            ) : (
+              <div className="saldo-card-amount">{cfg.amount}</div>
+            )}
+          </div>
+
+          <div className="saldo-card-actions">
+            <button
+              className="saldo-card-icon-btn"
+              onClick={cfg.toggle}
+              aria-label={cfg.hidden ? 'Tampilkan saldo' : 'Sembunyikan saldo'}
+            >
+              <i className={cfg.hidden ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'} />
+            </button>
+            {renderCardMenu(key, clone ? undefined : cfg.menuRef)}
+          </div>
+        </div>
+
+        <div className="saldo-card-footer">
+          <span className="saldo-card-badge">
+            <i className={`fa-solid ${cfg.badgeIcon}`} style={{ fontSize: 9 }} />
+            {cfg.badge}
+          </span>
+        </div>
+      </div>
+    );
+  };
 
   // ── Skeleton loading state — cegah flash konten kosong sebelum
   // localStorage selesai dibaca oleh WalletContext.
@@ -179,158 +287,20 @@ export default function DashboardPage() {
 
       {/* SALDO CAROUSEL — Total / Pegangan / Tabungan */}
       <section className="saldo-carousel-wrap">
-        <div
-          className="saldo-carousel"
-          ref={carouselRef}
-          onScroll={handleCarouselScroll}
-        >
-          {/* SLIDE 1 — TOTAL SALDO */}
-          <div className="saldo-slide">
-            <div className="saldo-card saldo-card-total">
-              <div className="card-orb card-orb-1" />
-              <div className="card-orb card-orb-2" />
-
-              <div className="saldo-card-top">
-                <div>
-                  <div className="saldo-card-label">
-                    <i className="fa-solid fa-layer-group" />
-                    Total Saldo
-                  </div>
-                  <div className="saldo-card-amount">{maskTotal(animatedTotal)}</div>
-                </div>
-                <button
-                  className="saldo-card-icon-btn"
-                  onClick={() => setHideTotal((h) => !h)}
-                  aria-label={hideTotal ? 'Tampilkan total saldo' : 'Sembunyikan total saldo'}
-                >
-                  <i className={hideTotal ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'} />
-                </button>
+        <div className="saldo-carousel" ref={carousel.ref} {...carousel.handlers}>
+          {LOOP_SLIDES.map((key, i) => {
+            const clone = i === 0 || i === LOOP_SLIDES.length - 1;
+            return (
+              <div
+                key={`${key}-${i}`}
+                className="saldo-slide"
+                aria-hidden={clone || undefined}
+                inert={clone}
+              >
+                {renderSlide(key, clone)}
               </div>
-
-              <div className="saldo-divider" />
-
-              <div className="saldo-quick-stats">
-                <div className="saldo-quick-stat">
-                  <div className="saldo-quick-stat-label">
-                    <i className="fa-solid fa-arrow-trend-up" />
-                    Masuk Bulan Ini
-                  </div>
-                  <div className="saldo-quick-stat-value stat-income">
-                    +{maskMonthIncome(animatedMonthIncome)}
-                  </div>
-                </div>
-                <div className="saldo-quick-stat">
-                  <div className="saldo-quick-stat-label">
-                    <i className="fa-solid fa-arrow-trend-down" />
-                    Keluar Bulan Ini
-                  </div>
-                  <div className="saldo-quick-stat-value stat-expense">
-                    -{maskMonthExpense(animatedMonthExpense)}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* SLIDE 2 — SALDO PEGANGAN */}
-          <div className="saldo-slide">
-            <div className="saldo-card saldo-card-pegangan">
-              <div className="card-orb card-orb-1" />
-              <div className="card-orb card-orb-2" />
-
-              <div className="saldo-card-top">
-                <div style={{ flex: 1 }}>
-                  <div className="saldo-card-label">
-                    <i className="fa-solid fa-wallet" />
-                    Saldo Pegangan
-                  </div>
-
-                  {editingCard === 'pegangan' ? (
-                    <input
-                      ref={editInputRef}
-                      className="saldo-card-amount-edit"
-                      type="text"
-                      inputMode="numeric"
-                      value={editValue}
-                      onChange={(e) => setEditValue(e.target.value.replace(/[^0-9]/g, ''))}
-                      onBlur={commitEdit}
-                      onKeyDown={(e) => { if (e.key === 'Enter') editInputRef.current?.blur(); }}
-                    />
-                  ) : (
-                    <div className="saldo-card-amount">{maskPegangan(animatedPegangan)}</div>
-                  )}
-                </div>
-
-                <div className="saldo-card-actions">
-                  <button
-                    className="saldo-card-icon-btn"
-                    onClick={() => setHidePegangan((h) => !h)}
-                    aria-label={hidePegangan ? 'Tampilkan saldo' : 'Sembunyikan saldo'}
-                  >
-                    <i className={hidePegangan ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'} />
-                  </button>
-                  {renderCardMenu('pegangan', peganganMenuRef)}
-                </div>
-              </div>
-
-              <div className="saldo-card-footer">
-                <span className="saldo-card-badge">
-                  <i className="fa-solid fa-plus" style={{ fontSize: 9 }} />
-                  {maskPeganganShort(animatedTodayIncome)} hari ini
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* SLIDE 3 — SALDO TABUNGAN */}
-          <div className="saldo-slide">
-            <div className="saldo-card saldo-card-tabungan">
-              <div className="card-orb card-orb-1" />
-              <div className="card-orb card-orb-2" />
-
-              <div className="saldo-card-top">
-                <div style={{ flex: 1 }}>
-                  <div className="saldo-card-label">
-                    <i className="fa-solid fa-piggy-bank" />
-                    Saldo Tabungan
-                  </div>
-
-                  {editingCard === 'tabungan' ? (
-                    <input
-                      ref={editInputRef}
-                      className="saldo-card-amount-edit"
-                      type="text"
-                      inputMode="numeric"
-                      value={editValue}
-                      onChange={(e) => setEditValue(e.target.value.replace(/[^0-9]/g, ''))}
-                      onBlur={commitEdit}
-                      onKeyDown={(e) => { if (e.key === 'Enter') editInputRef.current?.blur(); }}
-                    />
-                  ) : (
-                    <div className="saldo-card-amount">{maskTabungan(animatedTabungan)}</div>
-                  )}
-                </div>
-
-                <div className="saldo-card-actions">
-                  <button
-                    className="saldo-card-icon-btn"
-                    onClick={() => setHideTabungan((h) => !h)}
-                    aria-label={hideTabungan ? 'Tampilkan saldo' : 'Sembunyikan saldo'}
-                  >
-                    <i className={hideTabungan ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'} />
-                  </button>
-                  {renderCardMenu('tabungan', tabunganMenuRef)}
-                </div>
-              </div>
-
-              <div className="saldo-card-footer">
-                <span className="saldo-card-badge">
-                  <i className="fa-solid fa-lock" style={{ fontSize: 9 }} />
-                  Total tersimpan
-                </span>
-              </div>
-            </div>
-          </div>
+            );
+          })}
         </div>
 
       </section>
@@ -338,14 +308,18 @@ export default function DashboardPage() {
 
       <section className="saldo-meta">
         {/* Dot indicators */}
-        <div className="saldo-dots">
+        <div className={`saldo-dots ${carousel.running ? 'is-running' : ''}`}>
           {SLIDES.map((s, i) => (
             <button
               key={s}
-              className={`saldo-dot ${activeSlide === i ? 'active' : ''}`}
-              onClick={() => goToSlide(i)}
+              className={`saldo-dot ${carousel.active === i ? 'active' : ''}`}
+              onClick={() => { haptics.light(); carousel.goTo(i); }}
               aria-label={`Ke slide ${s}`}
-            />
+            >
+              {carousel.active === i && carousel.running && (
+                <span className="saldo-dot-fill" style={{ animationDuration: `${AUTO_SLIDE_MS}ms` }} />
+              )}
+            </button>
           ))}
         </div>
 

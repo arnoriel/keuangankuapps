@@ -29,7 +29,25 @@
 .saldo-slide {
   flex: 0 0 100%;
   scroll-snap-align: center;
+  scroll-snap-stop: always; /* cegah skip melewati clone saat fling */
   min-width: 0;
+}
+
+/* Efek 3D: kartu di samping miring + mengecil, kartu tengah fokus.
+   Pakai scroll-driven animation (GPU, tanpa JS) — fallback: tampil flat. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .saldo-slide {
+      animation: saldo-slide-focus linear both;
+      animation-timeline: view(inline);
+    }
+  }
+}
+
+@keyframes saldo-slide-focus {
+  0%   { transform: perspective(900px) rotateY(-16deg) scale(0.88); opacity: 0.45; filter: saturate(0.7); }
+  50%  { transform: perspective(900px) rotateY(0deg)   scale(1);    opacity: 1;    filter: saturate(1); }
+  100% { transform: perspective(900px) rotateY(16deg)  scale(0.88); opacity: 0.45; filter: saturate(0.7); }
 }
 
 /* ---- shared card shell (solid — not glass, per user preference) ---- */
@@ -270,16 +288,37 @@
 }
 
 .saldo-dot {
+  position: relative;
+  overflow: hidden;
   width: 6px;
   height: 6px;
+  padding: 0;
+  border: none;
   border-radius: 99px;
   background: var(--border-2);
   transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .saldo-dot.active {
-  width: 20px;
+  width: 24px;
   background: var(--brand);
+}
+
+/* Saat auto-play jalan: track abu-abu + fill brand mengisi selama 5 detik */
+.saldo-dots.is-running .saldo-dot.active { background: var(--border-2); }
+
+.saldo-dot-fill {
+  position: absolute;
+  inset: 0;
+  background: var(--brand);
+  border-radius: inherit;
+  transform-origin: left center;
+  animation: saldo-dot-progress linear forwards;
+}
+
+@keyframes saldo-dot-progress {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
 }
 
 /* =====================

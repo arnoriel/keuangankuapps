@@ -43,6 +43,16 @@ nav.bottom-nav {
   }
 }
 
+/* DARK MODE — solid, tanpa liquid glass: pakai warna dasar tema supaya
+   menyatu dengan app (bukan efek blur/kaca yang terasa terpisah). */
+html[data-theme-mode="dark"] nav.bottom-nav {
+  background: var(--bg-card);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+
 .nav-btn {
   flex: 1;
   min-width: 0;

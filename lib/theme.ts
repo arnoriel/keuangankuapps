@@ -363,6 +363,8 @@ export function applyVarsToElement(el: HTMLElement, vars: ThemeVars): void {
   THEME_VARS.forEach((key) => {
     el.style.setProperty(`--${key}`, vars[key]);
   });
+  // Flag mode untuk styling CSS yang beda antara light/dark (mis. bottom nav).
+  el.dataset.themeMode = isColorDark(vars['bg-page']) ? 'dark' : 'light';
 }
 
 export function applyActiveTheme(): void {
@@ -392,6 +394,11 @@ export function getInlineThemeScript(): string {
     }
     var el = document.documentElement;
     for (var k in vars) { el.style.setProperty('--' + k, vars[k]); }
+    var bg = String(vars['bg-page'] || '').replace('#', '');
+    var lum = bg.length >= 6
+      ? (0.299 * parseInt(bg.substr(0, 2), 16) + 0.587 * parseInt(bg.substr(2, 2), 16) + 0.114 * parseInt(bg.substr(4, 2), 16)) / 255
+      : 1;
+    el.setAttribute('data-theme-mode', lum < 0.5 ? 'dark' : 'light');
     var metaTag = document.querySelector('meta[name="theme-color"]');
     if (!metaTag) {
       metaTag = document.createElement('meta');
