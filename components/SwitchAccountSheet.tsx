@@ -8,6 +8,7 @@ import { useWallet } from '@/context/WalletContext';
 import { getAccountTotal, validateAccountName, MAX_ACCOUNTS, type AccountNameError } from '@/lib/storage';
 import { formatRupiah, parseAmountInput } from '@/lib/utils';
 import { haptics } from '@/lib/haptics';
+import SheetPortal from './SheetPortal';
 
 interface Props {
   onClose: () => void;
@@ -99,6 +100,7 @@ export default function SwitchAccountSheet({ onClose, onChanged }: Props) {
   const steps: View[] = ['name', 'pegangan', 'tabungan'];
 
   return (
+    <SheetPortal>
     <div className="overlay" onClick={onClose}>
       <div className="sheet" onClick={(e) => e.stopPropagation()}>
         <div className="sheet-handle" />
@@ -228,5 +230,6 @@ export default function SwitchAccountSheet({ onClose, onChanged }: Props) {
         </div>
       </div>
     </div>
+    </SheetPortal>
   );
 }

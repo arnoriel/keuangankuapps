@@ -1,6 +1,7 @@
 import '@/styles/shared.css';
 import '@/styles/back-btn.css';
 import '@/styles/sheet.css';
+import '@/styles/subbalance.css';
 import { WalletProvider } from '@/context/WalletContext';
 import AppShell from '@/components/AppShell';
 

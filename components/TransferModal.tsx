@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useWallet } from '@/context/WalletContext';
 import { haptics } from '@/lib/haptics';
 import { formatRupiah, parseAmountInput } from '@/lib/utils';
+import SheetPortal from './SheetPortal';
 
 interface Props {
   onClose: () => void;
@@ -68,7 +69,7 @@ export default function TransferModal({ onClose }: Props) {
   const toColor = toWallet === 'tabungan' ? 'mini-blue' : 'mini-green';
 
   return (
-    <>
+    <SheetPortal>
       <div className="overlay" onClick={onClose} />
       <div className="sheet sheet-transfer">
         <div className="sheet-handle" />
@@ -178,6 +179,6 @@ export default function TransferModal({ onClose }: Props) {
           </div>
         )}
       </div>
-    </>
+    </SheetPortal>
   );
 }

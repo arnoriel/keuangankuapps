@@ -6,6 +6,7 @@ import { useWallet } from '@/context/WalletContext';
 import { haptics } from '@/lib/haptics';
 import { IncomePeriod, IncomeCategory, ExpenseCategory, WalletType } from '@/lib/types';
 import { formatRupiah, parseAmountInput, INCOME_CATEGORIES, EXPENSE_CATEGORIES } from '@/lib/utils';
+import SheetPortal from './SheetPortal';
 
 type Step = 'choose' | 'income' | 'expense' | 'success';
 
@@ -77,7 +78,7 @@ export default function AddTransactionSheet({ onClose }: Props) {
     amount > (expenseWallet === 'tabungan' ? saldoTabungan : saldoPegangan);
 
   return (
-    <>
+    <SheetPortal>
       <div className="overlay" onClick={onClose} />
       <div className="sheet">
         <div className="sheet-handle" />
@@ -255,6 +256,6 @@ export default function AddTransactionSheet({ onClose }: Props) {
           </div>
         )}
       </div>
-    </>
+    </SheetPortal>
   );
 }

@@ -12,7 +12,22 @@
    Slide 2: Saldo Pegangan (green glass)
    Slide 3: Saldo Tabungan (indigo/purple glass)
    ===================== */
-.saldo-carousel-wrap { padding-top: 4px; }
+.saldo-carousel-wrap { position: relative; padding-top: 4px; }
+
+/* overlay transparan: blokir swipe/drag ke carousel saat drawer rincian
+   saldo terbuka. pointer-events: none supaya tombol expand/collapse (dan
+   konten card lain) tetap bisa diklik normal — kunci cuma aktif lewat
+   touch-action pada .saldo-carousel sendiri (lihat .is-locked). */
+.saldo-carousel-lock {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: transparent;
+  pointer-events: none;
+}
+.saldo-carousel.is-locked {
+  touch-action: pan-y;
+}
 
 .saldo-carousel {
   display: flex;
@@ -25,6 +40,8 @@
 }
 
 .saldo-carousel::-webkit-scrollbar { display: none; }
+
+
 
 .saldo-slide {
   flex: 0 0 100%;
@@ -459,6 +476,7 @@
 .home-hero {
   position: relative;
   isolation: isolate;
+  z-index: 2; /* di atas .subbalance-collapse drawer (sibling berikutnya) */
 }
 
 .home-hero > :not(.home-hero-fill) {

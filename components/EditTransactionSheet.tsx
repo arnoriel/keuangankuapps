@@ -6,6 +6,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useWallet } from '@/context/WalletContext';
 import { Transaction, IncomeCategory, ExpenseCategory, IncomePeriod, WalletType } from '@/lib/types';
 import { formatRupiah, parseAmountInput, INCOME_CATEGORIES, EXPENSE_CATEGORIES } from '@/lib/utils';
+import SheetPortal from './SheetPortal';
 
 interface Props {
   tx: Transaction;
@@ -71,7 +72,7 @@ export default function EditTransactionSheet({ tx, onClose }: Props) {
   else typeLabel = 'Transfer Keluar';
 
   return (
-    <>
+    <SheetPortal>
       <div className="overlay" onClick={onClose} />
       <div className="sheet">
         <div className="sheet-handle" />
@@ -231,6 +232,6 @@ export default function EditTransactionSheet({ tx, onClose }: Props) {
           </div>
         )}
       </div>
-    </>
+    </SheetPortal>
   );
 }

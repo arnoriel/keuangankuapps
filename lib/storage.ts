@@ -4,6 +4,7 @@ import {
   Account, AccountView,
 } from './types';
 import { toLocalDateStr } from './utils';
+import { ensureCashCard, addSubCard, removeSubCard, reallocateSubBalance } from './subBalance';
 
 // Key data akun utama dipertahankan agar data lama tetap terbaca (tanpa migrasi).
 // Akun tambahan memakai key `${KEY}__<accountId>`.
@@ -111,7 +112,7 @@ export function createAccount(name: string, saldoPegangan: number, saldoTabungan
   writeSubAccounts([...readSubAccounts(), account]);
   localStorage.setItem(
     walletKey(account.id),
-    JSON.stringify({ ...defaultState, saldoPegangan, saldoTabungan }),
+    JSON.stringify(ensureCashCard({ ...defaultState, saldoPegangan, saldoTabungan })),
   );
   localStorage.setItem(ACTIVE_ACCOUNT_KEY, account.id);
   return account;
@@ -160,22 +161,26 @@ const defaultState: AppState = {
   transactions: [],
   recurringExpenses: [],
   savingsGoals: [],
+  subBalances: [],
 };
 
 function readState(accountId: string): AppState {
   if (typeof window === 'undefined') return defaultState;
   try {
     const raw = localStorage.getItem(walletKey(accountId));
-    if (!raw) return defaultState;
+    if (!raw) return ensureCashCard(defaultState);
     const parsed = JSON.parse(raw);
-    return {
+    const state: AppState = {
       ...defaultState,
       ...parsed,
       recurringExpenses: parsed.recurringExpenses ?? [],
       savingsGoals: parsed.savingsGoals ?? [],
+      subBalances: parsed.subBalances ?? [],
     };
+    // Migrasi: akun lama tanpa Card Tunai → seluruh saldo existing masuk ke Tunai.
+    return ensureCashCard(state);
   } catch {
-    return defaultState;
+    return ensureCashCard(defaultState);
   }
 }
 
@@ -208,10 +213,16 @@ export function addIncome(
     date: toLocalDateStr(now),
     createdAt: now.toISOString(),
   };
-  const next: AppState = {
+  let next: AppState = {
     ...state,
     saldoPegangan: state.saldoPegangan + amount,
     transactions: [tx, ...state.transactions],
+  };
+  next = {
+    ...next,
+    subBalances: next.subBalances.map((s) =>
+      s.id === 'cash-pegangan' ? { ...s, amount: s.amount + amount } : s,
+    ),
   };
   setState(next);
   return next;
@@ -222,9 +233,12 @@ export function addExpense(
   note: string,
   category: ExpenseCategory = 'lainnya',
   wallet: WalletType = 'pegangan',
+  subCardId?: string,
 ): AppState {
   const state = getState();
   const now = new Date();
+  // Default ke Card Tunai jika tidak ditentukan — menjaga breakdown tetap konsisten dengan total.
+  const targetSubId = subCardId ?? `cash-${wallet}`;
   const tx: Transaction = {
     id: `tx_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
     type: 'expense',
@@ -232,14 +246,21 @@ export function addExpense(
     wallet,
     note: note.trim() || 'Pengeluaran',
     category,
+    subCardId: targetSubId,
     date: toLocalDateStr(now),
     createdAt: now.toISOString(),
   };
-  const next: AppState = {
+  let next: AppState = {
     ...state,
     saldoPegangan: wallet === 'pegangan' ? Math.max(0, state.saldoPegangan - amount) : state.saldoPegangan,
     saldoTabungan: wallet === 'tabungan' ? Math.max(0, state.saldoTabungan - amount) : state.saldoTabungan,
     transactions: [tx, ...state.transactions],
+  };
+  next = {
+    ...next,
+    subBalances: next.subBalances.map((s) =>
+      s.id === targetSubId ? { ...s, amount: Math.max(0, s.amount - amount) } : s,
+    ),
   };
   setState(next);
   return next;
@@ -270,30 +291,44 @@ export function editSaldo(wallet: WalletType, newAmount: number): AppState {
       }, ...state.transactions]
     : state.transactions;
 
+  const cashId = `cash-${wallet}`;
   const next: AppState = {
     ...state,
     saldoPegangan: wallet === 'pegangan' ? safeAmount : state.saldoPegangan,
     saldoTabungan: wallet === 'tabungan' ? safeAmount : state.saldoTabungan,
     transactions: txs,
+    subBalances: state.subBalances.map((s) =>
+      s.id === cashId ? { ...s, amount: Math.max(0, s.amount + delta) } : s,
+    ),
   };
   setState(next);
   return next;
 }
 
-export function transferFunds(amount: number, from: WalletType, to: WalletType): AppState {
+export function transferFunds(
+  amount: number,
+  from: WalletType,
+  to: WalletType,
+  fromSubCardId?: string,
+  toSubCardId?: string,
+): AppState {
   const state = getState();
   const now = new Date();
   const toLabel = to === 'tabungan' ? 'Tabungan' : 'Pegangan';
+  const fromId = fromSubCardId ?? `cash-${from}`;
+  const toId = toSubCardId ?? `cash-${to}`;
   const txIn: Transaction = {
     id: `tx_${Date.now()}_in`,
     type: 'transfer_in',
     amount,
     wallet: to,
     note: `Transfer ke Saldo ${toLabel}`,
+    subCardId: fromId,
+    toSubCardId: toId,
     date: toLocalDateStr(now),
     createdAt: now.toISOString(),
   };
-  const next: AppState = {
+  let next: AppState = {
     ...state,
     saldoPegangan:
       from === 'pegangan' ? state.saldoPegangan - amount : state.saldoPegangan + amount,
@@ -301,22 +336,95 @@ export function transferFunds(amount: number, from: WalletType, to: WalletType):
       from === 'tabungan' ? state.saldoTabungan - amount : state.saldoTabungan + amount,
     transactions: [txIn, ...state.transactions],
   };
+  next = {
+    ...next,
+    subBalances: next.subBalances.map((s) => {
+      if (s.id === fromId) return { ...s, amount: Math.max(0, s.amount - amount) };
+      if (s.id === toId) return { ...s, amount: s.amount + amount };
+      return s;
+    }),
+  };
   setState(next);
   return next;
 }
 
+// ─── SUB-CARD (BREAKDOWN SALDO PEGANGAN/TABUNGAN) ──────────────────────────
+
+export function addSubBalanceCard(wallet: WalletType, platformSlug: string): AppState {
+  const state = getState();
+  const { state: next } = addSubCard(state, wallet, platformSlug);
+  setState(next);
+  return next;
+}
+
+export function deleteSubBalanceCard(subCardId: string): AppState {
+  const state = getState();
+  const next = removeSubCard(state, subCardId);
+  setState(next);
+  return next;
+}
+
+export function reallocateSubCard(
+  fromSubCardId: string,
+  toSubCardId: string,
+  amount: number,
+): AppState {
+  const state = getState();
+  const from = state.subBalances.find((s) => s.id === fromSubCardId);
+  const to = state.subBalances.find((s) => s.id === toSubCardId);
+  if (!from || !to) return state;
+
+  const now = new Date();
+  const tx: Transaction = {
+    id: `tx_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+    type: 'realloc',
+    amount,
+    wallet: from.walletType,
+    note: `${from.label} → ${to.label}`,
+    subCardId: fromSubCardId,
+    toSubCardId,
+    date: toLocalDateStr(now),
+    createdAt: now.toISOString(),
+  };
+
+  const next = reallocateSubBalance(state, fromSubCardId, toSubCardId, amount);
+  if (next === state) return state; // reject: invalid/insufficient — no-op
+
+  const withTx: AppState = { ...next, transactions: [tx, ...next.transactions] };
+  setState(withTx);
+  return withTx;
+}
+
 // ─── EDIT & DELETE TRANSACTION ─────────────────────────────────────────────
+
+function adjustSubCard(state: AppState, subCardId: string | undefined, delta: number): AppState {
+  if (!subCardId) return state;
+  return {
+    ...state,
+    subBalances: state.subBalances.map((s) =>
+      s.id === subCardId ? { ...s, amount: Math.max(0, s.amount + delta) } : s,
+    ),
+  };
+}
 
 function reverseTransactionEffect(state: AppState, tx: Transaction): AppState {
   switch (tx.type) {
     case 'income':
-      return { ...state, saldoPegangan: state.saldoPegangan - tx.amount };
+      return adjustSubCard(
+        { ...state, saldoPegangan: state.saldoPegangan - tx.amount },
+        'cash-pegangan',
+        -tx.amount,
+      );
     case 'expense':
-      return {
-        ...state,
-        saldoPegangan: tx.wallet === 'pegangan' ? state.saldoPegangan + tx.amount : state.saldoPegangan,
-        saldoTabungan: tx.wallet === 'tabungan' ? state.saldoTabungan + tx.amount : state.saldoTabungan,
-      };
+      return adjustSubCard(
+        {
+          ...state,
+          saldoPegangan: tx.wallet === 'pegangan' ? state.saldoPegangan + tx.amount : state.saldoPegangan,
+          saldoTabungan: tx.wallet === 'tabungan' ? state.saldoTabungan + tx.amount : state.saldoTabungan,
+        },
+        tx.subCardId,
+        tx.amount,
+      );
     case 'transfer_in': {
       const dest = tx.wallet;
       const source: WalletType = dest === 'pegangan' ? 'tabungan' : 'pegangan';
@@ -342,13 +450,21 @@ function reverseTransactionEffect(state: AppState, tx: Transaction): AppState {
 function applyTransactionEffect(state: AppState, tx: Transaction): AppState {
   switch (tx.type) {
     case 'income':
-      return { ...state, saldoPegangan: state.saldoPegangan + tx.amount };
+      return adjustSubCard(
+        { ...state, saldoPegangan: state.saldoPegangan + tx.amount },
+        'cash-pegangan',
+        tx.amount,
+      );
     case 'expense':
-      return {
-        ...state,
-        saldoPegangan: tx.wallet === 'pegangan' ? state.saldoPegangan - tx.amount : state.saldoPegangan,
-        saldoTabungan: tx.wallet === 'tabungan' ? state.saldoTabungan - tx.amount : state.saldoTabungan,
-      };
+      return adjustSubCard(
+        {
+          ...state,
+          saldoPegangan: tx.wallet === 'pegangan' ? state.saldoPegangan - tx.amount : state.saldoPegangan,
+          saldoTabungan: tx.wallet === 'tabungan' ? state.saldoTabungan - tx.amount : state.saldoTabungan,
+        },
+        tx.subCardId,
+        -tx.amount,
+      );
     case 'transfer_in': {
       const dest = tx.wallet;
       const source: WalletType = dest === 'pegangan' ? 'tabungan' : 'pegangan';
@@ -387,13 +503,18 @@ export function updateTransaction(id: string, data: TransactionEditData): AppSta
 
   const oldTx = state.transactions[txIndex];
   let next = reverseTransactionEffect(state, oldTx);
+  const newWallet = oldTx.type === 'expense' ? (data.wallet ?? oldTx.wallet) : oldTx.wallet;
   const updatedTx: Transaction = {
     ...oldTx,
     amount: data.amount,
     note: data.note?.trim() || oldTx.note,
     category: data.category ?? oldTx.category,
     period: data.period ?? oldTx.period,
-    wallet: oldTx.type === 'expense' ? (data.wallet ?? oldTx.wallet) : oldTx.wallet,
+    wallet: newWallet,
+    // Wallet berubah → subCardId lama tidak valid lagi, fallback ke Card Tunai wallet baru.
+    subCardId: oldTx.type === 'expense'
+      ? (newWallet !== oldTx.wallet ? `cash-${newWallet}` : oldTx.subCardId)
+      : oldTx.subCardId,
     date: data.date,
   };
   next = applyTransactionEffect(next, updatedTx);

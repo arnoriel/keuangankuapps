@@ -6,6 +6,7 @@ import { useState } from 'react';
 import {
   capacitorBiometricAvailable, webAuthnSupported, registerWebAuthn,
 } from '@/lib/security';
+import SheetPortal from './SheetPortal';
 
 declare global {
   interface Window {
@@ -54,6 +55,7 @@ export default function BiometricSheet({ onClose, onActivated }: BiometricSheetP
   }
 
   return (
+    <SheetPortal>
     <div className="overlay" onClick={onClose}>
       <div className="sheet" onClick={(e) => e.stopPropagation()}>
         <div className="sheet-handle" />
@@ -100,5 +102,6 @@ export default function BiometricSheet({ onClose, onActivated }: BiometricSheetP
         </div>
       </div>
     </div>
+    </SheetPortal>
   );
 }

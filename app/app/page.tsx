@@ -12,7 +12,8 @@ import TransferModal from '@/components/TransferModal';
 import EditTransactionSheet from '@/components/EditTransactionSheet';
 import HomeSkeleton from '@/components/HomeSkeleton';
 import PullToRefresh from '@/components/PullToRefresh';
-import { Transaction } from '@/lib/types';
+import SubBalancePanel from '@/components/SubBalancePanel';
+import { Transaction, WalletType } from '@/lib/types';
 import { formatRupiah, formatRupiahShort, getGreeting, formatFullDate, getTodayDateStr } from '@/lib/utils';
 
 type CardKey = 'pegangan' | 'tabungan';
@@ -38,6 +39,24 @@ export default function DashboardPage() {
   const [hidePegangan, setHidePegangan] = useState(false);
   const [hideTabungan, setHideTabungan] = useState(false);
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
+  const [subBalanceCard, setSubBalanceCard] = useState<WalletType | null>(null);
+  // Panel di-mount dulu dalam posisi closed, baru 2 frame kemudian di-open,
+  // supaya transisi slide-down jalan (bukan langsung muncul di posisi akhir).
+  const [renderedSubBalance, setRenderedSubBalance] = useState<WalletType | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  useEffect(() => {
+    if (subBalanceCard) {
+      setRenderedSubBalance(subBalanceCard);
+      let raf2 = 0;
+      const raf1 = requestAnimationFrame(() => {
+        raf2 = requestAnimationFrame(() => setDrawerOpen(true));
+      });
+      return () => { cancelAnimationFrame(raf1); cancelAnimationFrame(raf2); };
+    }
+    setDrawerOpen(false);
+    const t = setTimeout(() => setRenderedSubBalance(null), 400);
+    return () => clearTimeout(t);
+  }, [subBalanceCard]);
 
   // Dropdown titik tiga & mode edit nominal per card
   const [openMenu, setOpenMenu] = useState<CardKey | null>(null);
@@ -49,7 +68,7 @@ export default function DashboardPage() {
     count: SLIDES.length,
     interval: AUTO_SLIDE_MS,
     enabled: wallet.isReady,
-    paused: !!(openMenu || editingCard || showTransfer || editingTx),
+    paused: !!(openMenu || editingCard || showTransfer || editingTx || subBalanceCard),
   });
 
   const peganganMenuRef = useRef<HTMLDivElement>(null);
@@ -259,6 +278,21 @@ export default function DashboardPage() {
             {cfg.badge}
           </span>
         </div>
+
+        {!clone && (
+          <button
+            type="button"
+            className={`saldo-card-expand-btn ${subBalanceCard === key ? 'is-open' : ''}`}
+            onClick={() => {
+              haptics.light();
+              setSubBalanceCard((cur) => (cur === key ? null : key));
+            }}
+            aria-label={`Lihat rincian ${cfg.label}`}
+            aria-expanded={subBalanceCard === key}
+          >
+            <i className="fa-solid fa-chevron-down" />
+          </button>
+        )}
       </div>
     );
   };
@@ -271,39 +305,54 @@ export default function DashboardPage() {
 
   return (
     <PullToRefresh onRefresh={wallet.hardRefresh}>
-      {/* HERO — fill tema di belakang header + card saldo */}
+      {/* HERO — fill tema di belakang header + card saldo (tinggi tetap, tidak ikut collapse) */}
       <div className="home-hero">
         <div className="home-hero-fill" aria-hidden="true" />
-      {/* HEADER */}
-      <header className="page-header">
-        <div>
-          <div className="header-greeting">{greeting}</div>
-          <div className="header-name">
-            <span className="header-name-brand">{wallet.activeAccountName || 'Keuanganku'}</span>
+        {/* HEADER */}
+        <header className="page-header">
+          <div>
+            <div className="header-greeting">{greeting}</div>
+            <div className="header-name">
+              <span className="header-name-brand">{wallet.activeAccountName || 'Keuanganku'}</span>
+            </div>
+            <div className="header-date">{today}</div>
           </div>
-          <div className="header-date">{today}</div>
-        </div>
-      </header>
+        </header>
 
-      {/* SALDO CAROUSEL — Total / Pegangan / Tabungan */}
-      <section className="saldo-carousel-wrap">
-        <div className="saldo-carousel" ref={carousel.ref} {...carousel.handlers}>
-          {LOOP_SLIDES.map((key, i) => {
-            const clone = i === 0 || i === LOOP_SLIDES.length - 1;
-            return (
-              <div
-                key={`${key}-${i}`}
-                className="saldo-slide"
-                aria-hidden={clone || undefined}
-                inert={clone}
-              >
-                {renderSlide(key, clone)}
-              </div>
-            );
-          })}
-        </div>
+        {/* SALDO CAROUSEL — Total / Pegangan / Tabungan */}
+        <section className="saldo-carousel-wrap">
+          <div
+            className={`saldo-carousel ${subBalanceCard ? 'is-locked' : ''}`}
+            ref={carousel.ref}
+            {...carousel.handlers}>
+            {LOOP_SLIDES.map((key, i) => {
+              const clone = i === 0 || i === LOOP_SLIDES.length - 1;
+              return (
+                <div
+                  key={`${key}-${i}`}
+                  className="saldo-slide"
+                  aria-hidden={clone || undefined}
+                  inert={clone}
+                >
+                  {renderSlide(key, clone)}
+                </div>
+              );
+            })}
+          </div>
+          {/* lock-overlay: cegah swipe/scroll pindah slide saat drawer rincian
+              saldo terbuka, TANPA ganggu scroll-snap native (overflow/touch-action
+              aslinya) yang bikin transisi antar slide kepotong/nyangkut. */}
+          {subBalanceCard && <div className="saldo-carousel-lock" aria-hidden="true" />}
+        </section>
+      </div>
 
-      </section>
+      {/* RINCIAN SALDO — drawer yang "ditarik keluar" dari belakang card saldo:
+          posisi ketumpuk di bawah carousel (negative margin), card saldo tetap
+          di atasnya (z-index lebih tinggi), jadi kelihatan kaya desk pull-out. */}
+      <div className={`subbalance-collapse ${drawerOpen ? 'is-open' : ''}`}>
+        <div className="subbalance-panel-outer">
+          {renderedSubBalance && <SubBalancePanel wallet={renderedSubBalance} />}
+        </div>
       </div>
 
       <section className="saldo-meta">

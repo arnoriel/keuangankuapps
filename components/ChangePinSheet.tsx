@@ -4,6 +4,7 @@ import '@/styles/sheet.css';
 import '@/styles/menu.css';
 import { useState, useCallback } from 'react';
 import { PIN_LENGTH, verifyPin, savePin } from '@/lib/security';
+import SheetPortal from './SheetPortal';
 
 interface ChangePinSheetProps {
   onClose: () => void;
@@ -88,6 +89,7 @@ export default function ChangePinSheet({ onClose }: ChangePinSheetProps) {
     step === 'confirm'  ? 'Masukkan PIN baru sekali lagi' : '';
 
   return (
+    <SheetPortal>
     <div className="overlay" onClick={onClose}>
       <div className="sheet" onClick={(e) => e.stopPropagation()}>
         <div className="sheet-handle" />
@@ -143,5 +145,6 @@ export default function ChangePinSheet({ onClose }: ChangePinSheetProps) {
         </div>
       </div>
     </div>
+    </SheetPortal>
   );
 }

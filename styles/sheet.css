@@ -57,7 +57,7 @@
   flex-shrink: 0;
 }
 
-.sheet-body { padding: 0 20px 40px; }
+.sheet-body { padding: 0 20px calc(40px + env(safe-area-inset-bottom, 0px)); }
 
 .sheet-header {
   display: flex;

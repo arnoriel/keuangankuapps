@@ -2,6 +2,7 @@
 
 import '@/styles/sheet.css';
 import '@/styles/menu.css';
+import SheetPortal from './SheetPortal';
 
 interface HelpSheetProps {
   onClose: () => void;
@@ -57,6 +58,7 @@ const HELP_ITEMS: { icon: string; title: string; desc: string }[] = [
 
 export default function HelpSheet({ onClose }: HelpSheetProps) {
   return (
+    <SheetPortal>
     <div className="overlay" onClick={onClose}>
       <div className="sheet" onClick={(e) => e.stopPropagation()}>
         <div className="sheet-handle" />
@@ -89,5 +91,6 @@ export default function HelpSheet({ onClose }: HelpSheetProps) {
         </div>
       </div>
     </div>
+    </SheetPortal>
   );
 }

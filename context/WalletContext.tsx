@@ -8,6 +8,7 @@ import {
 } from '@/lib/types';
 import * as storage from '@/lib/storage';
 import { toLocalDateStr } from '@/lib/utils';
+import { getSubBalances } from '@/lib/subBalance';
 import type { TransactionEditData } from '@/lib/storage';
 
 interface WalletContextType extends AppState {
@@ -29,9 +30,19 @@ interface WalletContextType extends AppState {
   removeAccount: (id: string) => void;
   refreshState: () => void;
   addIncome: (amount: number, period: IncomePeriod, category?: IncomeCategory, note?: string) => void;
-  addExpense: (amount: number, note: string, category?: ExpenseCategory, wallet?: WalletType) => void;
-  transfer: (amount: number, from: 'pegangan' | 'tabungan', to: 'pegangan' | 'tabungan') => void;
+  addExpense: (amount: number, note: string, category?: ExpenseCategory, wallet?: WalletType, subCardId?: string) => void;
+  transfer: (
+    amount: number,
+    from: 'pegangan' | 'tabungan',
+    to: 'pegangan' | 'tabungan',
+    fromSubCardId?: string,
+    toSubCardId?: string,
+  ) => void;
   editSaldo: (wallet: 'pegangan' | 'tabungan', newAmount: number) => void;
+  subBalancesOf: (wallet: WalletType) => AppState['subBalances'];
+  addSubCard: (wallet: WalletType, platformSlug: string) => void;
+  deleteSubCard: (subCardId: string) => void;
+  reallocateSubCard: (fromSubCardId: string, toSubCardId: string, amount: number) => void;
   updateTransaction: (id: string, data: TransactionEditData) => void;
   deleteTransaction: (id: string) => void;
   /** Re-read state dari localStorage — dipakai pull-to-refresh */
@@ -65,7 +76,7 @@ function computeStats(state: AppState) {
 export function WalletProvider({ children }: { children: ReactNode }) {
   const [walletState, setWalletState] = useState<AppState>({
     saldoPegangan: 0, saldoTabungan: 0,
-    transactions: [], recurringExpenses: [], savingsGoals: [],
+    transactions: [], recurringExpenses: [], savingsGoals: [], subBalances: [],
   });
   const [isReady, setIsReady] = useState(false);
   const [accounts, setAccounts] = useState<AccountView[]>([]);
@@ -120,16 +131,38 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     setWalletState(storage.addIncome(amount, period, category ?? 'lainnya', note));
   }, []);
 
-  const addExpense = useCallback((amount: number, note: string, category?: ExpenseCategory, wallet?: WalletType) => {
-    setWalletState(storage.addExpense(amount, note, category ?? 'lainnya', wallet ?? 'pegangan'));
+  const addExpense = useCallback((amount: number, note: string, category?: ExpenseCategory, wallet?: WalletType, subCardId?: string) => {
+    setWalletState(storage.addExpense(amount, note, category ?? 'lainnya', wallet ?? 'pegangan', subCardId));
   }, []);
 
-  const transfer = useCallback((amount: number, from: 'pegangan' | 'tabungan', to: 'pegangan' | 'tabungan') => {
-    setWalletState(storage.transferFunds(amount, from, to));
+  const transfer = useCallback((
+    amount: number,
+    from: 'pegangan' | 'tabungan',
+    to: 'pegangan' | 'tabungan',
+    fromSubCardId?: string,
+    toSubCardId?: string,
+  ) => {
+    setWalletState(storage.transferFunds(amount, from, to, fromSubCardId, toSubCardId));
   }, []);
 
   const editSaldo = useCallback((wallet: 'pegangan' | 'tabungan', newAmount: number) => {
     setWalletState(storage.editSaldo(wallet, newAmount));
+  }, []);
+
+  const subBalancesOf = useCallback((wallet: WalletType) => {
+    return getSubBalances(walletState, wallet);
+  }, [walletState]);
+
+  const addSubCard = useCallback((wallet: WalletType, platformSlug: string) => {
+    setWalletState(storage.addSubBalanceCard(wallet, platformSlug));
+  }, []);
+
+  const deleteSubCard = useCallback((subCardId: string) => {
+    setWalletState(storage.deleteSubBalanceCard(subCardId));
+  }, []);
+
+  const reallocateSubCard = useCallback((fromSubCardId: string, toSubCardId: string, amount: number) => {
+    setWalletState(storage.reallocateSubCard(fromSubCardId, toSubCardId, amount));
   }, []);
 
   const updateTransaction = useCallback((id: string, data: TransactionEditData) => {
@@ -178,6 +211,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       refreshState,
       hardRefresh,
       addIncome, addExpense, transfer, editSaldo,
+      subBalancesOf, addSubCard, deleteSubCard, reallocateSubCard,
       updateTransaction, deleteTransaction,
       addRecurring, toggleRecurring, deleteRecurring,
       addGoal, updateGoalAmount, deleteGoal,

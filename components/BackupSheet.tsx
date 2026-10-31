@@ -7,6 +7,7 @@ import {
   exportBackup, readBackupFile, restoreBackup,
   InvalidBackupError, type BackupPreview,
 } from '@/lib/backup';
+import SheetPortal from './SheetPortal';
 
 interface BackupSheetProps {
   onClose: () => void;
@@ -70,6 +71,7 @@ export default function BackupSheet({ onClose, onRestored }: BackupSheetProps) {
   }
 
   return (
+    <SheetPortal>
     <div className="overlay" onClick={stage === 'restoring' ? undefined : onClose}>
       <div className="sheet" onClick={(e) => e.stopPropagation()}>
         <div className="sheet-handle" />
@@ -194,6 +196,7 @@ export default function BackupSheet({ onClose, onRestored }: BackupSheetProps) {
         </div>
       </div>
     </div>
+    </SheetPortal>
   );
 }
 

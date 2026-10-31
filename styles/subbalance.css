@@ -1,0 +1,328 @@
+/* =====================
+   EXPAND ARROW (TANPA BATANG)
+   ===================== */
+.saldo-card-expand-btn {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 64px);
+  height: 30px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.85);
+  transition: all 0.15s ease;
+}
+/* footer (badge) nempel langsung di bawah nominal, bukan terdorong ke dasar card */
+.saldo-card-pegangan .saldo-card-footer,
+.saldo-card-tabungan .saldo-card-footer { margin-top: 0; padding-top: 12px; }
+.saldo-card-expand-btn i { font-size: 13px; transition: transform 0.25s cubic-bezier(0.32, 0.72, 0, 1); }
+.saldo-card-expand-btn:active { transform: translateX(-50%) scale(0.88); background: rgba(255, 255, 255, 0.26); }
+.saldo-card-expand-btn.is-open i { transform: rotate(180deg); }
+
+/* =====================
+   DESK-PULL DRAWER — slide-down murni dari bawah card saldo.
+   - Tepi atas drawer DIAM (margin-top -64px konstan, ketutup card z-index 2).
+   - Tinggi (grid 0fr→1fr) + margin-bottom (64→0) dianimasikan bareng,
+     durasi & easing sama: flow total = 0 saat closed, jadi dots/saldo-meta
+     tidak tertarik naik dan tidak pernah ketimpa drawer.
+   - Panel di dalamnya translateY(-100%→0): sisi bawah (rounded) turun
+     mengikuti tepi clip, bukan pop dari dua sisi.
+   ===================== */
+.subbalance-collapse {
+  --drawer-ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --drawer-dur: 0.36s;
+  position: relative;
+  display: grid;
+  grid-template-rows: 0fr;
+  margin-top: -64px;
+  margin-bottom: 64px;
+  z-index: 0;
+  transition: grid-template-rows var(--drawer-dur) var(--drawer-ease),
+              margin-bottom var(--drawer-dur) var(--drawer-ease);
+}
+.subbalance-collapse.is-open {
+  grid-template-rows: 1fr;
+  margin-bottom: 0;
+}
+
+.subbalance-collapse > .subbalance-panel-outer {
+  overflow: hidden;
+  min-height: 0;
+}
+
+.saldo-meta { position: relative; z-index: 1; }
+
+.subbalance-panel {
+  border-radius: 0 0 var(--r-2xl) var(--r-2xl);
+  padding: 64px 18px 18px; /* area yg ketutup card */
+  margin: 0 20px;
+  transform: translateY(-100%);
+  will-change: transform;
+  transition: transform var(--drawer-dur) var(--drawer-ease);
+}
+.subbalance-collapse.is-open .subbalance-panel {
+  transform: translateY(0);
+}
+
+/* Warna drawer = warna card saldo yang membukanya */
+.subbalance-panel-pegangan {
+  background: linear-gradient(150deg, #0EA070 0%, #065F46 100%);
+  box-shadow: 0 10px 24px rgba(14,160,112,0.24);
+}
+.subbalance-panel-tabungan {
+  background: linear-gradient(150deg, #5B6AF0 0%, #4C2AC4 100%);
+  box-shadow: 0 10px 24px rgba(91,106,240,0.26);
+}
+
+.subbalance-panel-subtitle {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.72);
+  margin-bottom: 14px;
+}
+
+.subbalance-panel .empty-state-text { color: rgba(255, 255, 255, 0.72); }
+
+/* =====================
+   SUB-BALANCE GRID
+   ===================== */
+
+.subcard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: -4px -4px 10px;
+  padding: 4px 4px 8px;
+  max-height: 46vh;
+  overflow-y: auto;
+}
+
+/* Tile = mini saldo-card: icon di atas, label uppercase, nominal besar */
+.subcard-tile {
+  --tile-text: #fff;
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  min-height: 124px;
+  padding: 14px 14px 13px;
+  text-align: left;
+  border-radius: var(--r-xl);
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: var(--tile-text);
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+.subcard-tile.is-branded {
+  background: linear-gradient(150deg,
+    color-mix(in srgb, var(--tile-c) 92%, #fff) 0%,
+    color-mix(in srgb, var(--tile-c) 64%, #000) 100%);
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--tile-c) 30%, transparent),
+              inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+.subcard-tile.is-light { --tile-text: #111827; }
+.subcard-tile:active { transform: scale(0.97); filter: brightness(1.08); }
+
+.subcard-tile .card-orb {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: -1;
+}
+.subcard-tile .card-orb-1 {
+  width: 110px; height: 110px; top: -44px; right: -30px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.24) 0%, transparent 70%);
+}
+.subcard-tile .card-orb-2 {
+  width: 80px; height: 80px; bottom: -34px; left: -20px;
+  background: radial-gradient(circle, rgba(0, 0, 0, 0.22) 0%, transparent 70%);
+}
+
+.subcard-tile-top {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: auto;
+  padding-bottom: 12px;
+}
+
+.subcard-tile-label {
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--tile-text);
+  opacity: 0.78;
+  margin-bottom: 4px;
+}
+
+.subcard-tile-amount {
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 19px;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+  line-height: 1.15;
+  color: var(--tile-text);
+}
+
+.subcard-tile-remove {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.22);
+  color: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.subcard-tile-remove i { font-size: 10px; }
+
+.platform-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--bg-card);
+  flex-shrink: 0;
+}
+.platform-icon svg { width: 100%; height: 100%; }
+.platform-icon-cash { background: var(--green-subtle); color: var(--green-dark); }
+.platform-icon-fallback { background: var(--bg-elevated); color: var(--text-4); }
+.platform-icon i { font-size: 14px; }
+
+.subcard-add-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px;
+  border-radius: var(--r-xl);
+  background: rgba(255, 255, 255, 0.10);
+  border: 1.5px dashed rgba(255, 255, 255, 0.32);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  transition: all 0.15s ease;
+}
+.subcard-add-btn:active { transform: scale(0.98); background: rgba(255, 255, 255, 0.18); }
+
+/* =====================
+   PLATFORM PICKER (ADD SUB-CARD)
+   ===================== */
+.search-input-wrapper {
+  display: flex;
+  align-items: center;
+  background: var(--bg-input);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 0 14px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.search-input-wrapper:focus-within {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(91, 106, 240, 0.12);
+}
+
+.search-input-icon {
+  color: var(--text-4);
+  font-size: 14px;
+  margin-right: 10px;
+  flex-shrink: 0;
+}
+
+.search-input {
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  outline: none;
+  padding: 13px 0;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-1);
+  font-family: var(--font);
+}
+.search-input::placeholder { color: var(--text-4); font-weight: 400; }
+
+.platform-picker-list {
+  max-height: 55vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.platform-picker-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 8px;
+  border-radius: var(--r-md);
+  background: none;
+  text-align: left;
+  transition: background 0.15s ease;
+}
+.platform-picker-item:active { background: var(--bg-card-2); }
+
+.platform-picker-item-label {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+/* =====================
+   SUB-CARD TRANSFER TARGET LIST
+   ===================== */
+.subcard-target-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.subcard-target-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  background: var(--bg-card);
+  border: 1.5px solid var(--border);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-1);
+  transition: all 0.15s ease;
+}
+
+.subcard-target-item.active {
+  border-color: var(--brand);
+  background: var(--brand-subtle);
+}
+
+.subcard-target-bal {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-3);
+}

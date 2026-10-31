@@ -9,6 +9,7 @@ import {
   applyVarsToElement, applyActiveTheme,
   type ThemeId, type ThemeVars, type ThemeVarKey,
 } from '@/lib/theme';
+import SheetPortal from './SheetPortal';
 
 interface ThemeCustomizerSheetProps {
   onClose: () => void;
@@ -77,6 +78,7 @@ export default function ThemeCustomizerSheet({ onClose }: ThemeCustomizerSheetPr
   const currentPreset = THEME_PRESETS.find((p) => p.id === selected);
 
   return (
+    <SheetPortal>
     <div className="overlay" onClick={handleClose}>
       <div className="sheet theme-sheet" onClick={(e) => e.stopPropagation()}>
         <div className="sheet-handle" />
@@ -226,5 +228,6 @@ export default function ThemeCustomizerSheet({ onClose }: ThemeCustomizerSheetPr
         </div>
       </div>
     </div>
+    </SheetPortal>
   );
 }

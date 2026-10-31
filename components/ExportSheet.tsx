@@ -7,6 +7,7 @@ import { useWallet } from '@/context/WalletContext';
 import { getUserName } from '@/lib/storage';
 import { exportFinanceReportPDF } from '@/lib/pdfExport';
 import { getTodayDateStr, getMonthDateRange, toLocalDateStr } from '@/lib/utils';
+import SheetPortal from './SheetPortal';
 
 interface ExportSheetProps {
   onClose: () => void;
@@ -61,6 +62,7 @@ export default function ExportSheet({ onClose }: ExportSheetProps) {
         transactions: wallet.transactions,
         recurringExpenses: wallet.recurringExpenses,
         savingsGoals: wallet.savingsGoals,
+        subBalances: wallet.subBalances,
       };
 
       exportFinanceReportPDF(state, range, getUserName());
@@ -74,6 +76,7 @@ export default function ExportSheet({ onClose }: ExportSheetProps) {
   }
 
   return (
+    <SheetPortal>
     <div className="overlay" onClick={onClose}>
       <div className="sheet" onClick={(e) => e.stopPropagation()}>
         <div className="sheet-handle" />
@@ -196,6 +199,7 @@ export default function ExportSheet({ onClose }: ExportSheetProps) {
         </div>
       </div>
     </div>
+    </SheetPortal>
   );
 }
 
