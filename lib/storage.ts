@@ -313,33 +313,39 @@ export function transferFunds(
   toSubCardId?: string,
 ): AppState {
   const state = getState();
-  const now = new Date();
-  const toLabel = to === 'tabungan' ? 'Tabungan' : 'Pegangan';
   const fromId = fromSubCardId ?? `cash-${from}`;
   const toId = toSubCardId ?? `cash-${to}`;
+  const fromSub = state.subBalances.find((s) => s.id === fromId);
+  const toSub = state.subBalances.find((s) => s.id === toId);
+  const fromTotal = from === 'pegangan' ? state.saldoPegangan : state.saldoTabungan;
+
+  // Tolak jika sumber tidak valid / tidak cukup — jangan pernah membuat nilai baru.
+  if (
+    from === to || amount <= 0 || !fromSub || !toSub ||
+    fromSub.walletType !== from || toSub.walletType !== to ||
+    fromSub.amount < amount || fromTotal < amount
+  ) return state;
+
+  const now = new Date();
+  const toLabel = to === 'tabungan' ? 'Tabungan' : 'Pegangan';
   const txIn: Transaction = {
     id: `tx_${Date.now()}_in`,
     type: 'transfer_in',
     amount,
     wallet: to,
-    note: `Transfer ke Saldo ${toLabel}`,
+    note: `Transfer ke Saldo ${toLabel} · ${fromSub.label} → ${toSub.label}`,
     subCardId: fromId,
     toSubCardId: toId,
     date: toLocalDateStr(now),
     createdAt: now.toISOString(),
   };
-  let next: AppState = {
+  const next: AppState = {
     ...state,
-    saldoPegangan:
-      from === 'pegangan' ? state.saldoPegangan - amount : state.saldoPegangan + amount,
-    saldoTabungan:
-      from === 'tabungan' ? state.saldoTabungan - amount : state.saldoTabungan + amount,
+    saldoPegangan: from === 'pegangan' ? state.saldoPegangan - amount : state.saldoPegangan + amount,
+    saldoTabungan: from === 'tabungan' ? state.saldoTabungan - amount : state.saldoTabungan + amount,
     transactions: [txIn, ...state.transactions],
-  };
-  next = {
-    ...next,
-    subBalances: next.subBalances.map((s) => {
-      if (s.id === fromId) return { ...s, amount: Math.max(0, s.amount - amount) };
+    subBalances: state.subBalances.map((s) => {
+      if (s.id === fromId) return { ...s, amount: s.amount - amount };
       if (s.id === toId) return { ...s, amount: s.amount + amount };
       return s;
     }),
@@ -407,6 +413,28 @@ function adjustSubCard(state: AppState, subCardId: string | undefined, delta: nu
   };
 }
 
+function transferSubIds(tx: Transaction): { fromId: string; toId: string } {
+  const source: WalletType = tx.wallet === 'pegangan' ? 'tabungan' : 'pegangan';
+  return { fromId: tx.subCardId ?? `cash-${source}`, toId: tx.toSubCardId ?? `cash-${tx.wallet}` };
+}
+
+function shiftTransferSubCards(state: AppState, tx: Transaction, sign: 1 | -1): AppState {
+  const { fromId, toId } = transferSubIds(tx);
+  return adjustSubCard(adjustSubCard(state, fromId, -sign * tx.amount), toId, sign * tx.amount);
+}
+
+function canApplyTransfer(state: AppState, tx: Transaction): boolean {
+  const { fromId, toId } = transferSubIds(tx);
+  const source: WalletType = tx.wallet === 'pegangan' ? 'tabungan' : 'pegangan';
+  const fromTotal = source === 'pegangan' ? state.saldoPegangan : state.saldoTabungan;
+  const from = state.subBalances.find((s) => s.id === fromId);
+  return tx.amount > 0 && !!from && !!state.subBalances.some((s) => s.id === toId) && from.amount >= tx.amount && fromTotal >= tx.amount;
+}
+
+function isTransferTx(tx: Transaction): boolean {
+  return tx.type === 'transfer_in' || tx.type === 'transfer_out';
+}
+
 function reverseTransactionEffect(state: AppState, tx: Transaction): AppState {
   switch (tx.type) {
     case 'income':
@@ -428,7 +456,7 @@ function reverseTransactionEffect(state: AppState, tx: Transaction): AppState {
     case 'transfer_in': {
       const dest = tx.wallet;
       const source: WalletType = dest === 'pegangan' ? 'tabungan' : 'pegangan';
-      return {
+      return shiftTransferSubCards({
         ...state,
         saldoPegangan:
           dest === 'pegangan' ? state.saldoPegangan - tx.amount
@@ -438,7 +466,7 @@ function reverseTransactionEffect(state: AppState, tx: Transaction): AppState {
           dest === 'tabungan' ? state.saldoTabungan - tx.amount
           : source === 'tabungan' ? state.saldoTabungan + tx.amount
           : state.saldoTabungan,
-      };
+      }, tx, -1);
     }
     case 'transfer_out':
       return reverseTransactionEffect(state, { ...tx, type: 'transfer_in' });
@@ -468,7 +496,7 @@ function applyTransactionEffect(state: AppState, tx: Transaction): AppState {
     case 'transfer_in': {
       const dest = tx.wallet;
       const source: WalletType = dest === 'pegangan' ? 'tabungan' : 'pegangan';
-      return {
+      return shiftTransferSubCards({
         ...state,
         saldoPegangan:
           dest === 'pegangan' ? state.saldoPegangan + tx.amount
@@ -478,7 +506,7 @@ function applyTransactionEffect(state: AppState, tx: Transaction): AppState {
           dest === 'tabungan' ? state.saldoTabungan + tx.amount
           : source === 'tabungan' ? state.saldoTabungan - tx.amount
           : state.saldoTabungan,
-      };
+      }, tx, 1);
     }
     case 'transfer_out':
       return applyTransactionEffect(state, { ...tx, type: 'transfer_in' });
@@ -503,6 +531,7 @@ export function updateTransaction(id: string, data: TransactionEditData): AppSta
 
   const oldTx = state.transactions[txIndex];
   let next = reverseTransactionEffect(state, oldTx);
+  if (isTransferTx(oldTx) && !canApplyTransfer(next, { ...oldTx, amount: data.amount })) return state;
   const newWallet = oldTx.type === 'expense' ? (data.wallet ?? oldTx.wallet) : oldTx.wallet;
   const updatedTx: Transaction = {
     ...oldTx,
@@ -531,6 +560,11 @@ export function deleteTransaction(id: string): AppState {
   const tx = state.transactions.find(t => t.id === id);
   if (!tx) return state;
 
+  if (isTransferTx(tx)) {
+    const { toId } = transferSubIds(tx);
+    const dest = state.subBalances.find((x) => x.id === toId);
+    if (dest && dest.amount < tx.amount) return state; // dana tujuan sudah terpakai
+  }
   let next = reverseTransactionEffect(state, tx);
   next = {
     ...next,

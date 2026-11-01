@@ -4,6 +4,8 @@ import { useState, useRef, useEffect } from 'react';
 import { useWallet } from '@/context/WalletContext';
 import { haptics } from '@/lib/haptics';
 import { formatRupiah, parseAmountInput } from '@/lib/utils';
+import { WalletType, SubBalance } from '@/lib/types';
+import PlatformIcon from './PlatformIcon';
 import SheetPortal from './SheetPortal';
 
 interface Props {
@@ -12,9 +14,39 @@ interface Props {
 
 type Direction = 'to-tabungan' | 'to-pegangan';
 
+const WALLET_LABEL: Record<WalletType, string> = { pegangan: 'Saldo Pegangan', tabungan: 'Saldo Tabungan' };
+const WALLET_COLOR: Record<WalletType, string> = { pegangan: 'mini-green', tabungan: 'mini-blue' };
+
+interface PickerProps {
+  cards: SubBalance[];
+  value: string;
+  onChange: (id: string) => void;
+}
+
+function SubCardPicker({ cards, value, onChange }: PickerProps) {
+  return (
+    <div className="subcard-target-list">
+      {cards.map((c) => (
+        <button
+          key={c.id}
+          type="button"
+          className={`subcard-target-item ${value === c.id ? 'active' : ''}`}
+          onClick={() => { haptics.light(); onChange(c.id); }}
+        >
+          <PlatformIcon platformSlug={c.platformSlug} size={24} />
+          <span>{c.label}</span>
+          <span className="subcard-target-bal">{formatRupiah(c.amount)}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export default function TransferModal({ onClose }: Props) {
-  const { saldoPegangan, saldoTabungan, transfer } = useWallet();
+  const { subBalancesOf, transfer } = useWallet();
   const [direction, setDirection] = useState<Direction>('to-tabungan');
+  const [fromSubId, setFromSubId] = useState('cash-pegangan');
+  const [toSubId, setToSubId] = useState('cash-tabungan');
   const [rawAmount, setRawAmount] = useState('');
   const [isSwapping, setIsSwapping] = useState(false);
   const [done, setDone] = useState(false);
@@ -24,19 +56,26 @@ export default function TransferModal({ onClose }: Props) {
     setTimeout(() => inputRef.current?.focus(), 150);
   }, []);
 
+  const fromWallet: WalletType = direction === 'to-tabungan' ? 'pegangan' : 'tabungan';
+  const toWallet: WalletType = direction === 'to-tabungan' ? 'tabungan' : 'pegangan';
+  const fromCards = subBalancesOf(fromWallet);
+  const toCards = subBalancesOf(toWallet);
+  const fromCard = fromCards.find((c) => c.id === fromSubId);
+  const toCard = toCards.find((c) => c.id === toSubId);
+  const fromBalance = fromCard?.amount ?? 0;
+
   const amount = parseAmountInput(rawAmount);
-  const fromWallet = direction === 'to-tabungan' ? 'pegangan' : 'tabungan';
-  const toWallet = direction === 'to-tabungan' ? 'tabungan' : 'pegangan';
-  const fromBalance = direction === 'to-tabungan' ? saldoPegangan : saldoTabungan;
-  const toBalance = direction === 'to-tabungan' ? saldoTabungan : saldoPegangan;
   const isInsufficient = amount > fromBalance;
-  const canSubmit = amount > 0 && amount <= fromBalance;
+  const canSubmit = amount > 0 && amount <= fromBalance && !!fromCard && !!toCard;
 
   function handleSwap() {
     haptics.light();
     setIsSwapping(true);
     setTimeout(() => {
       setDirection((d) => (d === 'to-tabungan' ? 'to-pegangan' : 'to-tabungan'));
+      setFromSubId(`cash-${toWallet}`);
+      setToSubId(`cash-${fromWallet}`);
+      setRawAmount('');
       setIsSwapping(false);
     }, 300);
   }
@@ -57,16 +96,14 @@ export default function TransferModal({ onClose }: Props) {
       if (isInsufficient) haptics.warning();
       return;
     }
-    transfer(amount, fromWallet, toWallet);
+    transfer(amount, fromWallet, toWallet, fromSubId, toSubId);
     haptics.success();
     setDone(true);
     setTimeout(() => onClose(), 1800);
   }
 
-  const fromLabel = fromWallet === 'pegangan' ? 'Saldo Pegangan' : 'Saldo Tabungan';
-  const toLabel = toWallet === 'tabungan' ? 'Saldo Tabungan' : 'Saldo Pegangan';
-  const fromColor = fromWallet === 'pegangan' ? 'mini-green' : 'mini-blue';
-  const toColor = toWallet === 'tabungan' ? 'mini-blue' : 'mini-green';
+  const fromLabel = `${fromCard?.label ?? ''} (${WALLET_LABEL[fromWallet]})`;
+  const toLabel = `${toCard?.label ?? ''} (${WALLET_LABEL[toWallet]})`;
 
   return (
     <SheetPortal>
@@ -83,18 +120,17 @@ export default function TransferModal({ onClose }: Props) {
               <h2 className="sheet-title">Transfer Dana</h2>
               <div style={{ width: 36 }} />
             </div>
-            <p className="sheet-subtitle">Pindahkan saldo antar dompetmu</p>
+            <p className="sheet-subtitle">Pilih sumber dan tujuan dana</p>
 
-            {/* Transfer Flow UI */}
             <div className={`transfer-flow ${isSwapping ? 'swapping' : ''}`}>
-              <div className={`transfer-wallet-mini ${fromColor}`}>
+              <div className={`transfer-wallet-mini ${WALLET_COLOR[fromWallet]}`}>
                 <div className="transfer-wallet-dot" />
                 <div className="transfer-wallet-info">
                   <div className="transfer-wallet-role">DARI</div>
-                  <div className="transfer-wallet-name">{fromLabel}</div>
-                  <div className="transfer-wallet-bal">{formatRupiah(fromBalance)}</div>
+                  <div className="transfer-wallet-name">{WALLET_LABEL[fromWallet]}</div>
                 </div>
               </div>
+              <SubCardPicker cards={fromCards} value={fromSubId} onChange={setFromSubId} />
 
               <div className="transfer-mid">
                 <div className="transfer-arrow-line">
@@ -106,17 +142,16 @@ export default function TransferModal({ onClose }: Props) {
                 </button>
               </div>
 
-              <div className={`transfer-wallet-mini ${toColor}`}>
+              <div className={`transfer-wallet-mini ${WALLET_COLOR[toWallet]}`}>
                 <div className="transfer-wallet-dot" />
                 <div className="transfer-wallet-info">
                   <div className="transfer-wallet-role">KE</div>
-                  <div className="transfer-wallet-name">{toLabel}</div>
-                  <div className="transfer-wallet-bal">{formatRupiah(toBalance)}</div>
+                  <div className="transfer-wallet-name">{WALLET_LABEL[toWallet]}</div>
                 </div>
               </div>
+              <SubCardPicker cards={toCards} value={toSubId} onChange={setToSubId} />
             </div>
 
-            {/* Amount Input */}
             <div className="form-group">
               <div className="transfer-amount-header">
                 <label className="form-label" style={{ margin: 0 }}>Jumlah Transfer</label>
@@ -140,17 +175,16 @@ export default function TransferModal({ onClose }: Props) {
               {isInsufficient && (
                 <div className="input-error-msg">
                   <i className="fa-solid fa-circle-exclamation" />
-                  Saldo tidak cukup. Tersedia {formatRupiah(fromBalance)}
+                  Saldo {fromCard?.label} tidak cukup. Tersedia {formatRupiah(fromBalance)}
                 </div>
               )}
             </div>
 
-            {/* Preview */}
             {canSubmit && (
               <div className="amount-preview transfer-preview">
                 <span className="preview-label">
                   <i className="fa-solid fa-rotate" />
-                  {fromLabel} &rarr; {toLabel}
+                  {fromCard?.label} &rarr; {toCard?.label}
                 </span>
                 <span className="preview-amount" style={{ color: 'var(--brand)' }}>
                   {formatRupiah(amount)}
@@ -158,11 +192,7 @@ export default function TransferModal({ onClose }: Props) {
               </div>
             )}
 
-            <button
-              className="btn-primary"
-              onClick={handleSubmit}
-              disabled={!canSubmit}
-            >
+            <button className="btn-primary" onClick={handleSubmit} disabled={!canSubmit}>
               Konfirmasi Transfer
             </button>
             <button className="btn-ghost" onClick={onClose}>Batal</button>
