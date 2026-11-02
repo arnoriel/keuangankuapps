@@ -43,6 +43,8 @@ interface WalletContextType extends AppState {
   addSubCard: (wallet: WalletType, platformSlug: string) => void;
   deleteSubCard: (subCardId: string) => void;
   reallocateSubCard: (fromSubCardId: string, toSubCardId: string, amount: number) => void;
+  /** Pindahkan semua saldo ke Card Tunai (kedua wallet). */
+  resetSubCards: () => void;
   updateTransaction: (id: string, data: TransactionEditData) => void;
   deleteTransaction: (id: string) => void;
   /** Re-read state dari localStorage — dipakai pull-to-refresh */
@@ -165,6 +167,10 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     setWalletState(storage.reallocateSubCard(fromSubCardId, toSubCardId, amount));
   }, []);
 
+  const resetSubCards = useCallback(() => {
+    setWalletState(storage.resetSubBalances());
+  }, []);
+
   const updateTransaction = useCallback((id: string, data: TransactionEditData) => {
     setWalletState(storage.updateTransaction(id, data));
   }, []);
@@ -211,7 +217,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       refreshState,
       hardRefresh,
       addIncome, addExpense, transfer, editSaldo,
-      subBalancesOf, addSubCard, deleteSubCard, reallocateSubCard,
+      subBalancesOf, addSubCard, deleteSubCard, reallocateSubCard, resetSubCards,
       updateTransaction, deleteTransaction,
       addRecurring, toggleRecurring, deleteRecurring,
       addGoal, updateGoalAmount, deleteGoal,

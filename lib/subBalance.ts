@@ -115,3 +115,22 @@ export function adjustSubCardAmount(state: AppState, subCardId: string, delta: n
     ),
   };
 }
+
+/** Total saldo wallet yang sudah dialokasikan ke platform selain Tunai. */
+export function nonCashTotal(state: AppState, wallet: WalletType): number {
+  return getSubBalances(state, wallet)
+    .filter((s) => s.platformSlug !== 'cash')
+    .reduce((acc, s) => acc + s.amount, 0);
+}
+
+/** Kumpulkan seluruh saldo tiap wallet ke Card Tunai; card platform lain jadi Rp0 (card tetap ada). */
+export function resetToCash(state: AppState): AppState {
+  const cashTotals: Record<string, number> = {
+    [cashSubCardId('pegangan')]: state.saldoPegangan,
+    [cashSubCardId('tabungan')]: state.saldoTabungan,
+  };
+  return {
+    ...state,
+    subBalances: state.subBalances.map((s) => ({ ...s, amount: cashTotals[s.id] ?? 0 })),
+  };
+}

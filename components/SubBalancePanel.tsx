@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type CSSProperties } from 'react';
+import { useState, useEffect, type CSSProperties } from 'react';
 import { useWallet } from '@/context/WalletContext';
 import { haptics } from '@/lib/haptics';
 import { formatRupiah } from '@/lib/utils';
@@ -52,11 +52,30 @@ function SubCardTile({ sub, onOpen, onDelete }: TileProps) {
 }
 
 export default function SubBalancePanel({ wallet }: Props) {
-  const { subBalancesOf, deleteSubCard } = useWallet();
+  const { subBalancesOf, deleteSubCard, resetSubCards } = useWallet();
   const [showAdd, setShowAdd] = useState(false);
   const [transferFrom, setTransferFrom] = useState<string | null>(null);
+  const [confirmReset, setConfirmReset] = useState(false);
 
   const subCards = subBalancesOf(wallet);
+
+  // Konfirmasi reset otomatis batal kalau tidak di-tap lagi
+  useEffect(() => {
+    if (!confirmReset) return;
+    const t = setTimeout(() => setConfirmReset(false), 3000);
+    return () => clearTimeout(t);
+  }, [confirmReset]);
+
+  function handleReset() {
+    if (!confirmReset) {
+      haptics.warning();
+      setConfirmReset(true);
+      return;
+    }
+    haptics.success();
+    resetSubCards();
+    setConfirmReset(false);
+  }
 
   function handleDelete(id: string, amount: number) {
     if (amount > 0) {
@@ -69,7 +88,18 @@ export default function SubBalancePanel({ wallet }: Props) {
 
   return (
     <div className={`subbalance-panel subbalance-panel-${wallet}`}>
-      <p className="subbalance-panel-subtitle">Rincian saldo kamu tersimpan di mana saja</p>
+      <div className="subbalance-panel-head">
+        <p className="subbalance-panel-subtitle">Rincian saldo kamu tersimpan di mana saja</p>
+        <button
+          type="button"
+          className={`subbalance-reset-btn${confirmReset ? ' is-confirm' : ''}`}
+          onClick={handleReset}
+          aria-label="Reset semua saldo ke Tunai"
+        >
+          <i className={`fa-solid ${confirmReset ? 'fa-check' : 'fa-rotate-left'}`} />
+          {confirmReset && 'Yakin?'}
+        </button>
+      </div>
 
       {subCards.length === 0 ? (
         <div className="empty-state" style={{ padding: '24px 0' }}>

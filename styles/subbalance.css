@@ -326,3 +326,69 @@
   font-weight: 500;
   color: var(--text-3);
 }
+/* =====================
+   RESET RINCIAN SALDO
+   ===================== */
+.subbalance-panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.subbalance-panel-head .subbalance-panel-subtitle { margin-bottom: 0; }
+
+.subbalance-reset-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 10px;
+  justify-content: center;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+.subbalance-reset-btn:active { transform: scale(0.92); }
+.subbalance-reset-btn.is-confirm { background: rgba(229, 72, 77, 0.9); }
+
+/* =====================
+   PILIH SUMBER DANA (PENGELUARAN)
+   ===================== */
+.source-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.source-chip {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  padding: 9px 11px;
+  text-align: left;
+  border-radius: var(--r-xl);
+  border: 1.5px solid var(--border);
+  background: var(--bg-card);
+  transition: all 0.15s ease;
+}
+.source-chip:active { transform: scale(0.97); }
+.source-chip-active {
+  border-color: var(--brand);
+  background: var(--brand-subtle);
+}
+.source-chip-text { display: flex; flex-direction: column; min-width: 0; }
+.source-chip-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-1, var(--text-2));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.source-chip-amount { font-size: 11px; color: var(--text-4); }

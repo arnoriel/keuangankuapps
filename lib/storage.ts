@@ -4,7 +4,10 @@ import {
   Account, AccountView,
 } from './types';
 import { toLocalDateStr } from './utils';
-import { ensureCashCard, addSubCard, removeSubCard, reallocateSubBalance } from './subBalance';
+import {
+  ensureCashCard, addSubCard, removeSubCard, reallocateSubBalance,
+  cashSubCardId, resetToCash,
+} from './subBalance';
 
 // Key data akun utama dipertahankan agar data lama tetap terbaca (tanpa migrasi).
 // Akun tambahan memakai key `${KEY}__<accountId>`.
@@ -267,19 +270,19 @@ export function addExpense(
 }
 
 // ─── EDIT SALDO (KOREKSI NOMINAL MANUAL) ───────────────────────────────────
-// Dipakai saat user salah input saldo pegangan/tabungan dan ingin
-// mengoreksi nominalnya secara langsung, tanpa membuat transaksi baru.
+// Koreksi total wallet langsung. Seluruh nominal baru jadi saldo Card Tunai
+// wallet tsb, sedangkan card platform lain (GoPay, BCA, dst) di wallet yang
+// sama di-reset ke Rp0 supaya breakdown selalu rapi & konsisten dengan total.
 export function editSaldo(wallet: WalletType, newAmount: number): AppState {
   const state = getState();
   const safeAmount = Math.max(0, Math.round(newAmount));
   const oldAmount = wallet === 'pegangan' ? state.saldoPegangan : state.saldoTabungan;
   const delta = safeAmount - oldAmount;
   const now = new Date();
+  const cashId = cashSubCardId(wallet);
 
-  // Record the correction as a transaction (amount can be negative) so the
-  // portfolio history chart can account for manual balance edits instead of
-  // silently absorbing them into the series' starting point.
-  const txs = delta !== 0
+  // Dicatat sebagai transaksi 'adjustment' (bisa negatif) supaya grafik portofolio ikut akurat.
+  const transactions = delta !== 0
     ? [{
         id: `tx_${Date.now()}_adj`,
         type: 'adjustment' as const,
@@ -291,14 +294,13 @@ export function editSaldo(wallet: WalletType, newAmount: number): AppState {
       }, ...state.transactions]
     : state.transactions;
 
-  const cashId = `cash-${wallet}`;
   const next: AppState = {
     ...state,
     saldoPegangan: wallet === 'pegangan' ? safeAmount : state.saldoPegangan,
     saldoTabungan: wallet === 'tabungan' ? safeAmount : state.saldoTabungan,
-    transactions: txs,
+    transactions,
     subBalances: state.subBalances.map((s) =>
-      s.id === cashId ? { ...s, amount: Math.max(0, s.amount + delta) } : s,
+      s.walletType !== wallet ? s : { ...s, amount: s.id === cashId ? safeAmount : 0 },
     ),
   };
   setState(next);
@@ -366,6 +368,13 @@ export function addSubBalanceCard(wallet: WalletType, platformSlug: string): App
 export function deleteSubBalanceCard(subCardId: string): AppState {
   const state = getState();
   const next = removeSubCard(state, subCardId);
+  setState(next);
+  return next;
+}
+
+/** Kembalikan seluruh saldo Pegangan & Tabungan ke Card Tunai masing-masing. */
+export function resetSubBalances(): AppState {
+  const next = resetToCash(getState());
   setState(next);
   return next;
 }

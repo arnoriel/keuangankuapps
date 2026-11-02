@@ -6,6 +6,8 @@ import { useWallet } from '@/context/WalletContext';
 import { haptics } from '@/lib/haptics';
 import { IncomePeriod, IncomeCategory, ExpenseCategory, WalletType } from '@/lib/types';
 import { formatRupiah, parseAmountInput, INCOME_CATEGORIES, EXPENSE_CATEGORIES } from '@/lib/utils';
+import { cashSubCardId } from '@/lib/subBalance';
+import PlatformIcon from './PlatformIcon';
 import SheetPortal from './SheetPortal';
 
 type Step = 'choose' | 'income' | 'expense' | 'success';
@@ -13,13 +15,14 @@ type Step = 'choose' | 'income' | 'expense' | 'success';
 interface Props { onClose: () => void; }
 
 export default function AddTransactionSheet({ onClose }: Props) {
-  const { addIncome, addExpense, saldoPegangan, saldoTabungan } = useWallet();
+  const { addIncome, addExpense, saldoPegangan, saldoTabungan, subBalancesOf } = useWallet();
   const [step, setStep] = useState<Step>('choose');
   const [rawAmount, setRawAmount] = useState('');
   const [period, setPeriod] = useState<IncomePeriod>('harian');
   const [incomeCategory, setIncomeCategory] = useState<IncomeCategory>('lainnya');
   const [expenseCategory, setExpenseCategory] = useState<ExpenseCategory>('lainnya');
   const [expenseWallet, setExpenseWallet] = useState<WalletType>('pegangan');
+  const [expenseSubId, setExpenseSubId] = useState(cashSubCardId('pegangan'));
   const [note, setNote] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -59,23 +62,31 @@ export default function AddTransactionSheet({ onClose }: Props) {
       setSuccessMsg(`${formatRupiah(amount)} ditambahkan ke Saldo Pegangan`);
     } else if (step === 'expense') {
       const noteText = note.trim() || EXPENSE_CATEGORIES.find(c => c.key === expenseCategory)?.label || 'Pengeluaran';
-      addExpense(amount, noteText, expenseCategory, expenseWallet);
+      addExpense(amount, noteText, expenseCategory, expenseWallet, expenseSubId);
       const walletLabel = expenseWallet === 'tabungan' ? 'Saldo Tabungan' : 'Saldo Pegangan';
-      setSuccessMsg(`${formatRupiah(amount)} dikurangi dari ${walletLabel}`);
+      setSuccessMsg(`${formatRupiah(amount)} dikurangi dari ${walletLabel} · ${selectedSource?.label ?? 'Tunai'}`);
     }
     haptics.success();
     setStep('success');
     closeTimerRef.current = setTimeout(onClose, 1800);
   }
 
+  // Ganti wallet → sumber dana kembali ke Tunai wallet tsb (sub-card wallet lama tidak valid)
+  function selectExpenseWallet(w: WalletType) {
+    setExpenseWallet(w);
+    setExpenseSubId(cashSubCardId(w));
+  }
+
   function handleBack() {
-    setRawAmount(''); setNote(''); setExpenseWallet('pegangan');
+    setRawAmount(''); setNote(''); selectExpenseWallet('pegangan');
     setStep('choose');
   }
 
+  const expenseSources = subBalancesOf(expenseWallet);
+  const selectedSource = expenseSources.find((s) => s.id === expenseSubId);
   const insufficientBalance =
     step === 'expense' && amount > 0 &&
-    amount > (expenseWallet === 'tabungan' ? saldoTabungan : saldoPegangan);
+    amount > (selectedSource?.amount ?? (expenseWallet === 'tabungan' ? saldoTabungan : saldoPegangan));
 
   return (
     <SheetPortal>
@@ -208,17 +219,34 @@ export default function AddTransactionSheet({ onClose }: Props) {
               <label className="form-label">Ambil dari Saldo</label>
               <div className="period-tabs">
                 <button className={`period-tab ${expenseWallet === 'pegangan' ? 'active' : ''}`}
-                  onClick={() => setExpenseWallet('pegangan')} type="button">
+                  onClick={() => selectExpenseWallet('pegangan')} type="button">
                   <i className="fa-solid fa-wallet" /> Pegangan
                 </button>
                 <button className={`period-tab ${expenseWallet === 'tabungan' ? 'active' : ''}`}
-                  onClick={() => setExpenseWallet('tabungan')} type="button">
+                  onClick={() => selectExpenseWallet('tabungan')} type="button">
                   <i className="fa-solid fa-piggy-bank" /> Tabungan
                 </button>
               </div>
               <p className="sheet-subtitle" style={{ margin: '6px 2px 0' }}>
                 Saldo tersedia: {formatRupiah(expenseWallet === 'tabungan' ? saldoTabungan : saldoPegangan)}
               </p>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Bayar Pakai</label>
+              <div className="source-grid">
+                {expenseSources.map((sub) => (
+                  <button key={sub.id} type="button"
+                    className={`source-chip ${expenseSubId === sub.id ? 'source-chip-active' : ''}`}
+                    onClick={() => { haptics.light(); setExpenseSubId(sub.id); }}>
+                    <PlatformIcon platformSlug={sub.platformSlug} size={22} />
+                    <span className="source-chip-text">
+                      <span className="source-chip-label">{sub.label}</span>
+                      <span className="source-chip-amount">{formatRupiah(sub.amount)}</span>
+                    </span>
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="form-group">

@@ -1,7 +1,7 @@
 'use client';
 
 import '@/styles/home.css';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useWallet } from '@/context/WalletContext';
 import { haptics } from '@/lib/haptics';
@@ -10,6 +10,8 @@ import { useInfiniteCarousel } from '@/hooks/useInfiniteCarousel';
 import TransactionItem from '@/components/TransactionItem';
 import TransferModal from '@/components/TransferModal';
 import EditTransactionSheet from '@/components/EditTransactionSheet';
+import EditSaldoSheet from '@/components/EditSaldoSheet';
+import SaldoCardMenu from '@/components/SaldoCardMenu';
 import HomeSkeleton from '@/components/HomeSkeleton';
 import PullToRefresh from '@/components/PullToRefresh';
 import SubBalancePanel from '@/components/SubBalancePanel';
@@ -59,57 +61,19 @@ export default function DashboardPage() {
   }, [subBalanceCard]);
 
   // Dropdown titik tiga & mode edit nominal per card
-  const [openMenu, setOpenMenu] = useState<CardKey | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [editingCard, setEditingCard] = useState<CardKey | null>(null);
-  const [editValue, setEditValue] = useState('');
 
   // Carousel berputar + auto-geser 5 detik (pause saat ada interaksi/overlay)
   const carousel = useInfiniteCarousel({
     count: SLIDES.length,
     interval: AUTO_SLIDE_MS,
     enabled: wallet.isReady,
-    paused: !!(openMenu || editingCard || showTransfer || editingTx || subBalanceCard),
+    paused: !!(menuOpen || editingCard || showTransfer || editingTx || subBalanceCard),
   });
 
-  const peganganMenuRef = useRef<HTMLDivElement>(null);
-  const tabunganMenuRef = useRef<HTMLDivElement>(null);
-  const editInputRef = useRef<HTMLInputElement>(null);
-
-  // Tutup dropdown saat tap di luar area card menu
-  useEffect(() => {
-    if (!openMenu) return;
-    const handleOutside = (e: MouseEvent | TouchEvent) => {
-      const ref = openMenu === 'pegangan' ? peganganMenuRef : tabunganMenuRef;
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpenMenu(null);
-      }
-    };
-    document.addEventListener('mousedown', handleOutside);
-    document.addEventListener('touchstart', handleOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleOutside);
-      document.removeEventListener('touchstart', handleOutside);
-    };
-  }, [openMenu]);
-
-  // Auto-focus input begitu masuk mode edit
-  useEffect(() => {
-    if (editingCard) editInputRef.current?.focus();
-  }, [editingCard]);
-
   const startEdit = (card: CardKey) => {
-    const current = card === 'pegangan' ? wallet.saldoPegangan : wallet.saldoTabungan;
-    setEditValue(String(current));
     setEditingCard(card);
-    setOpenMenu(null);
-  };
-
-  const commitEdit = () => {
-    if (!editingCard) return;
-    const parsed = parseInt(editValue.replace(/[^0-9]/g, ''), 10);
-    const finalAmount = Number.isFinite(parsed) ? parsed : 0;
-    wallet.editSaldo(editingCard, finalAmount);
-    setEditingCard(null);
   };
 
   const recentTx = wallet.transactions.slice(0, RECENT_TX_LIMIT);
@@ -142,45 +106,23 @@ export default function DashboardPage() {
   const maskTabungan = (amount: number) =>
     hideTabungan ? '••••••' : formatRupiah(amount);
 
-  const renderCardMenu = (card: CardKey, ref?: React.RefObject<HTMLDivElement | null>) => (
-    <div className="saldo-card-menu-wrap" ref={ref} style={{ position: 'relative' }}>
-      <button
-        className="saldo-card-icon-btn"
-        onClick={() => setOpenMenu((m) => (m === card ? null : card))}
-        aria-label={`Opsi saldo ${card}`}
-      >
-        <i className="fa-solid fa-ellipsis-vertical" />
-      </button>
-      {ref && openMenu === card && (
-        <div className="saldo-card-menu-dropdown">
-          <button className="saldo-card-menu-item" onClick={() => startEdit(card)}>
-            <i className="fa-solid fa-pen" />
-            Edit Nominal
-          </button>
-        </div>
-      )}
-    </div>
-  );
-
   // Config card Pegangan & Tabungan (struktur identik → DRY)
   const cardConfig = {
     pegangan: {
       label: 'Saldo Pegangan', icon: 'fa-wallet',
       amount: maskPegangan(animatedPegangan),
       hidden: hidePegangan, toggle: () => setHidePegangan((h) => !h),
-      menuRef: peganganMenuRef,
       badgeIcon: 'fa-plus', badge: `${maskPeganganShort(animatedTodayIncome)} hari ini`,
     },
     tabungan: {
       label: 'Saldo Tabungan', icon: 'fa-piggy-bank',
       amount: maskTabungan(animatedTabungan),
       hidden: hideTabungan, toggle: () => setHideTabungan((h) => !h),
-      menuRef: tabunganMenuRef,
       badgeIcon: 'fa-lock', badge: 'Total tersimpan',
     },
   } as const;
 
-  // `clone` = salinan visual untuk loop: tanpa ref, input edit, & dropdown
+  // `clone` = salinan visual untuk loop (inert)
   const renderSlide = (key: SlideKey, clone: boolean) => {
     if (key === 'total') {
       return (
@@ -244,20 +186,7 @@ export default function DashboardPage() {
               {cfg.label}
             </div>
 
-            {!clone && editingCard === key ? (
-              <input
-                ref={editInputRef}
-                className="saldo-card-amount-edit"
-                type="text"
-                inputMode="numeric"
-                value={editValue}
-                onChange={(e) => setEditValue(e.target.value.replace(/[^0-9]/g, ''))}
-                onBlur={commitEdit}
-                onKeyDown={(e) => { if (e.key === 'Enter') editInputRef.current?.blur(); }}
-              />
-            ) : (
-              <div className="saldo-card-amount">{cfg.amount}</div>
-            )}
+            <div className="saldo-card-amount">{cfg.amount}</div>
           </div>
 
           <div className="saldo-card-actions">
@@ -268,7 +197,7 @@ export default function DashboardPage() {
             >
               <i className={cfg.hidden ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'} />
             </button>
-            {renderCardMenu(key, clone ? undefined : cfg.menuRef)}
+            <SaldoCardMenu label={cfg.label} onEdit={() => startEdit(key)} onOpenChange={clone ? undefined : setMenuOpen} />
           </div>
         </div>
 
@@ -443,6 +372,10 @@ export default function DashboardPage() {
 
       {showTransfer && (
         <TransferModal onClose={() => setShowTransfer(false)} />
+      )}
+
+      {editingCard && (
+        <EditSaldoSheet wallet={editingCard} onClose={() => setEditingCard(null)} />
       )}
 
       {editingTx && (
