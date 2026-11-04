@@ -40,7 +40,8 @@ interface WalletContextType extends AppState {
   ) => void;
   editSaldo: (wallet: 'pegangan' | 'tabungan', newAmount: number) => void;
   subBalancesOf: (wallet: WalletType) => AppState['subBalances'];
-  addSubCard: (wallet: WalletType, platformSlug: string) => void;
+  addSubCard: (wallet: WalletType, platformSlug: string, accountNumber?: string) => void;
+  updateSubCardAccount: (subCardId: string, accountNumber: string) => void;
   deleteSubCard: (subCardId: string) => void;
   reallocateSubCard: (fromSubCardId: string, toSubCardId: string, amount: number) => void;
   /** Pindahkan semua saldo ke Card Tunai (kedua wallet). */
@@ -155,8 +156,12 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     return getSubBalances(walletState, wallet);
   }, [walletState]);
 
-  const addSubCard = useCallback((wallet: WalletType, platformSlug: string) => {
-    setWalletState(storage.addSubBalanceCard(wallet, platformSlug));
+  const addSubCard = useCallback((wallet: WalletType, platformSlug: string, accountNumber?: string) => {
+    setWalletState(storage.addSubBalanceCard(wallet, platformSlug, accountNumber));
+  }, []);
+
+  const updateSubCardAccount = useCallback((subCardId: string, accountNumber: string) => {
+    setWalletState(storage.updateSubBalanceAccount(subCardId, accountNumber));
   }, []);
 
   const deleteSubCard = useCallback((subCardId: string) => {
@@ -217,7 +222,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       refreshState,
       hardRefresh,
       addIncome, addExpense, transfer, editSaldo,
-      subBalancesOf, addSubCard, deleteSubCard, reallocateSubCard, resetSubCards,
+      subBalancesOf, addSubCard, updateSubCardAccount, deleteSubCard, reallocateSubCard, resetSubCards,
       updateTransaction, deleteTransaction,
       addRecurring, toggleRecurring, deleteRecurring,
       addGoal, updateGoalAmount, deleteGoal,

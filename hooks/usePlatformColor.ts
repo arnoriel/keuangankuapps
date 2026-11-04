@@ -1,14 +1,18 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getPlatformBrandColor, type BrandColor } from '@/lib/platformCatalog';
+import { getPlatformBrandColor, peekPlatformBrandColor, type BrandColor } from '@/lib/platformCatalog';
 
 export function usePlatformColor(slug: string): BrandColor | null {
-  const [color, setColor] = useState<BrandColor | null>(null);
+  const [color, setColor] = useState<BrandColor | null>(() => peekPlatformBrandColor(slug) ?? null);
 
   useEffect(() => {
+    const cached = peekPlatformBrandColor(slug);
+    if (cached !== undefined) {
+      setColor(cached);
+      return;
+    }
     let cancelled = false;
-    setColor(null);
     getPlatformBrandColor(slug).then((c) => {
       if (!cancelled) setColor(c);
     });

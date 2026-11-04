@@ -26,57 +26,35 @@
 
 /* =====================
    DESK-PULL DRAWER — slide-down murni dari bawah card saldo.
-   - Tepi atas drawer DIAM (margin-top -64px konstan, ketutup card z-index 2).
-   - Tinggi (grid 0fr→1fr) + margin-bottom (64→0) dianimasikan bareng,
-     durasi & easing sama: flow total = 0 saat closed, jadi dots/saldo-meta
-     tidak tertarik naik dan tidak pernah ketimpa drawer.
-   - Panel di dalamnya translateY(-100%→0): sisi bawah (rounded) turun
-     mengikuti tepi clip, bukan pop dari dua sisi.
+   Layout langsung final; gerakan hanya transform (panel + .home-below) lewat
+   useDrawerMotion, jadi tidak ada reflow/repaint per frame di mobile.
    ===================== */
 .subbalance-collapse {
   --drawer-ease: cubic-bezier(0.32, 0.72, 0, 1);
-  --drawer-dur: 0.36s;
   position: relative;
-  display: grid;
-  grid-template-rows: 0fr;
-  margin-top: -64px;
-  margin-bottom: 64px;
+  margin: -64px 0 64px; /* closed: net flow 0, tepi atas ketutup card */
   z-index: 0;
-  transition: grid-template-rows var(--drawer-dur) var(--drawer-ease),
-              margin-bottom var(--drawer-dur) var(--drawer-ease);
 }
-.subbalance-collapse.is-open {
-  grid-template-rows: 1fr;
-  margin-bottom: 0;
-}
+.subbalance-collapse.is-mounted { margin-bottom: 0; }
 
-.subbalance-collapse > .subbalance-panel-outer {
-  overflow: hidden;
-  min-height: 0;
-}
-
+.subbalance-panel-outer { overflow: hidden; }
+.home-below { position: relative; z-index: 1; }
 .saldo-meta { position: relative; z-index: 1; }
 
 .subbalance-panel {
   border-radius: 0 0 var(--r-2xl) var(--r-2xl);
   padding: 64px 18px 18px; /* area yg ketutup card */
   margin: 0 20px;
-  transform: translateY(-100%);
-  will-change: transform;
-  transition: transform var(--drawer-dur) var(--drawer-ease);
-}
-.subbalance-collapse.is-open .subbalance-panel {
-  transform: translateY(0);
 }
 
 /* Warna drawer = warna card saldo yang membukanya */
 .subbalance-panel-pegangan {
   background: linear-gradient(150deg, #0EA070 0%, #065F46 100%);
-  box-shadow: 0 10px 24px rgba(14,160,112,0.24);
+  box-shadow: 0 6px 16px rgba(14,160,112,0.22);
 }
 .subbalance-panel-tabungan {
   background: linear-gradient(150deg, #5B6AF0 0%, #4C2AC4 100%);
-  box-shadow: 0 10px 24px rgba(91,106,240,0.26);
+  box-shadow: 0 6px 16px rgba(91,106,240,0.24);
 }
 
 .subbalance-panel-subtitle {
@@ -88,110 +66,225 @@
 .subbalance-panel .empty-state-text { color: rgba(255, 255, 255, 0.72); }
 
 /* =====================
-   SUB-BALANCE GRID
+   SUB-CARD — wallet pass: logo, nomor, nominal, porsi dari total
+   Hanya transform/opacity yang dianimasikan; dekorasi statis (tanpa blur/filter).
    ===================== */
-
-.subcard-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+.subcard-list {
+  display: flex;
+  flex-direction: column;
   gap: 10px;
   margin: -4px -4px 10px;
   padding: 4px 4px 8px;
   max-height: 46vh;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.3) transparent;
 }
+.subcard-list::-webkit-scrollbar { width: 4px; }
+.subcard-list::-webkit-scrollbar-track { background: transparent; }
+.subcard-list::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.3); border-radius: 99px; }
 
-/* Tile = mini saldo-card: icon di atas, label uppercase, nominal besar */
-.subcard-tile {
+.subcard {
   --tile-text: #fff;
   position: relative;
-  overflow: hidden;
   isolation: isolate;
+  contain: layout paint style;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  min-width: 0;
-  min-height: 124px;
-  padding: 14px 14px 13px;
-  text-align: left;
+  gap: 14px;
+  flex-shrink: 0;
+  padding: 14px 14px 12px;
   border-radius: var(--r-xl);
   background: rgba(255, 255, 255, 0.14);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.16);
   color: var(--tile-text);
-  transition: transform 0.15s ease, filter 0.15s ease;
+  animation: subcard-in 0.4s var(--drawer-ease) backwards;
+  animation-delay: calc(var(--i, 0) * 45ms + 80ms);
+  transition: transform 0.15s ease;
 }
-.subcard-tile.is-branded {
-  background: linear-gradient(150deg,
-    color-mix(in srgb, var(--tile-c) 92%, #fff) 0%,
-    color-mix(in srgb, var(--tile-c) 64%, #000) 100%);
-  box-shadow: 0 8px 18px color-mix(in srgb, var(--tile-c) 30%, transparent),
-              inset 0 1px 0 rgba(255, 255, 255, 0.16);
+.subcard.is-branded {
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--tile-c) 94%, #fff) 0%,
+    color-mix(in srgb, var(--tile-c) 62%, #000) 100%);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--tile-c) 28%, transparent),
+              inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
-.subcard-tile.is-light { --tile-text: #111827; }
-.subcard-tile:active { transform: scale(0.97); filter: brightness(1.08); }
+.subcard.is-light { --tile-text: #111827; }
+.subcard:active { transform: scale(0.985); }
 
-.subcard-tile .card-orb {
+/* kilau diagonal + guilloche (cincin tipis) ala kartu fisik */
+.subcard::before,
+.subcard::after {
+  content: '';
   position: absolute;
-  border-radius: 50%;
-  pointer-events: none;
+  inset: 0;
   z-index: -1;
+  pointer-events: none;
 }
-.subcard-tile .card-orb-1 {
-  width: 110px; height: 110px; top: -44px; right: -30px;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.24) 0%, transparent 70%);
+.subcard::before {
+  background: linear-gradient(115deg, rgba(255, 255, 255, 0.24) 0%, rgba(255, 255, 255, 0) 42%);
 }
-.subcard-tile .card-orb-2 {
-  width: 80px; height: 80px; bottom: -34px; left: -20px;
-  background: radial-gradient(circle, rgba(0, 0, 0, 0.22) 0%, transparent 70%);
+.subcard::after {
+  background: repeating-radial-gradient(circle at 108% -20%,
+    rgba(255, 255, 255, 0.11) 0 1px, transparent 1px 13px);
+  -webkit-mask-image: radial-gradient(circle at 100% 0%, #000 0%, transparent 70%);
+  mask-image: radial-gradient(circle at 100% 0%, #000 0%, transparent 70%);
+}
+/* tunai: pola lembar uang */
+.subcard-cash::after {
+  background: repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.10) 0 2px, transparent 2px 9px);
 }
 
-.subcard-tile-top {
+.subcard-hit {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
   width: 100%;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  margin-bottom: auto;
-  padding-bottom: 12px;
+  border-radius: inherit;
+  background: none;
 }
 
-.subcard-tile-label {
-  max-width: 100%;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 1.2;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  color: var(--tile-text);
-  opacity: 0.78;
-  margin-bottom: 4px;
-}
-
-.subcard-tile-amount {
-  max-width: 100%;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  font-size: 19px;
-  font-weight: 900;
-  letter-spacing: -0.5px;
-  line-height: 1.15;
-  color: var(--tile-text);
-}
-
-.subcard-tile-remove {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.22);
-  color: inherit;
+.subcard-row {
+  position: relative;
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 10px;
+  min-width: 0;
+  pointer-events: none;
 }
-.subcard-tile-remove i { font-size: 10px; }
+.subcard-row-bottom { align-items: flex-end; justify-content: space-between; }
+
+.subcard-logo {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.14), 0 0 0 2px rgba(255, 255, 255, 0.28);
+}
+.subcard-logo .platform-icon { background: none; border-radius: 0; }
+
+.subcard-title { display: flex; flex-direction: column; flex: 1; min-width: 0; gap: 2px; }
+.subcard-kind {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+.subcard-name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.2px;
+}
+
+.subcard-action {
+  position: relative;
+  z-index: 2;
+  pointer-events: auto;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  color: inherit;
+  transition: transform 0.15s ease;
+}
+.subcard-action i { font-size: 11px; }
+.subcard-action:active { transform: scale(0.88); }
+
+.subcard-account {
+  position: relative;
+  z-index: 2;
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  max-width: 55%;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 99px;
+  background: rgba(0, 0, 0, 0.2);
+  color: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  font-variant-numeric: tabular-nums;
+}
+.subcard.is-light .subcard-account { background: rgba(0, 0, 0, 0.1); }
+.subcard-account i { font-size: 11px; opacity: 0.85; }
+.subcard-account-text { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.subcard-account.is-static { pointer-events: none; }
+.subcard-account.is-empty { background: transparent; border: 1px dashed currentColor; opacity: 0.8; }
+.subcard-account:not(.is-static):active { transform: scale(0.95); }
+
+/* chip EMV mini untuk kartu bank */
+.subcard-chip {
+  width: 16px;
+  height: 12px;
+  flex-shrink: 0;
+  border-radius: 3px;
+  background:
+    linear-gradient(90deg, transparent 31%, rgba(120, 80, 0, 0.45) 31% 35%, transparent 35% 65%, rgba(120, 80, 0, 0.45) 65% 69%, transparent 69%),
+    linear-gradient(135deg, #F7DE8B, #C9962B);
+}
+
+.subcard-amount {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 21px;
+  font-weight: 900;
+  letter-spacing: -0.6px;
+  line-height: 1.1;
+  text-align: right;
+  pointer-events: none;
+}
+
+.subcard-share { display: flex; align-items: center; gap: 8px; pointer-events: none; }
+.subcard-share-track {
+  flex: 1;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.2);
+}
+.subcard.is-light .subcard-share-track { background: rgba(0, 0, 0, 0.12); }
+.subcard-share-fill {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: currentColor;
+  transform-origin: left center;
+  opacity: 0.9;
+}
+.subcard-share-pct {
+  min-width: 28px;
+  text-align: right;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  opacity: 0.75;
+}
+
+@keyframes subcard-in {
+  from { opacity: 0; transform: translate3d(0, 14px, 0) scale(0.98); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .subcard { animation: none; }
+}
 
 .platform-icon {
   display: inline-flex;
@@ -392,3 +485,32 @@
   white-space: nowrap;
 }
 .source-chip-amount { font-size: 11px; color: var(--text-4); }
+
+/* =====================
+   DETAIL NOMOR HP / REKENING
+   ===================== */
+.account-hero {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  margin-bottom: 18px;
+  border-radius: var(--r-xl);
+  background: var(--bg-card);
+  border: 1.5px solid var(--border);
+}
+.account-hero .platform-icon { width: 44px; height: 44px; border-radius: 12px; }
+.account-hero-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.account-hero-name { font-size: 15px; font-weight: 800; color: var(--text-1); }
+.account-hero-kind {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+  color: var(--text-4);
+}
+.account-input-icon { color: var(--text-4); font-size: 15px; margin-right: 10px; flex-shrink: 0; }
+.amount-input.account-input { min-width: 0; font-size: 20px; letter-spacing: 1px; font-variant-numeric: tabular-nums; }
+.amount-input.account-input::placeholder { font-size: 18px; letter-spacing: 1px; }
+.account-hint { display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 12px; color: var(--text-4); }
+.account-hint i { font-size: 10px; }

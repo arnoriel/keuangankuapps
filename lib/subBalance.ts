@@ -46,6 +46,7 @@ export function addSubCard(
   state: AppState,
   wallet: WalletType,
   platformSlug: string,
+  accountNumber?: string,
 ): { state: AppState; created: SubBalance | null } {
   const platform = getPlatformOption(platformSlug);
   if (!platform) return { state, created: null };
@@ -60,9 +61,22 @@ export function addSubCard(
     platformCategory: platform.category,
     label: platform.name,
     amount: 0,
+    ...(accountNumber ? { accountNumber } : {}),
     createdAt: new Date().toISOString(),
   };
   return { state: { ...state, subBalances: [...state.subBalances, sub] }, created: sub };
+}
+
+/** Set/hapus nomor HP/rekening sebuah sub-card. Card Tunai tidak punya nomor. */
+export function setSubCardAccount(state: AppState, subCardId: string, accountNumber: string): AppState {
+  return {
+    ...state,
+    subBalances: state.subBalances.map((s) => {
+      if (s.id !== subCardId || s.platformSlug === 'cash') return s;
+      const { accountNumber: _old, ...rest } = s;
+      return accountNumber ? { ...rest, accountNumber } : rest;
+    }),
+  };
 }
 
 export function removeSubCard(state: AppState, subCardId: string): AppState {

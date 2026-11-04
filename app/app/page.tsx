@@ -7,6 +7,8 @@ import { useWallet } from '@/context/WalletContext';
 import { haptics } from '@/lib/haptics';
 import { useCountUp } from '@/hooks/useCountUp';
 import { useInfiniteCarousel } from '@/hooks/useInfiniteCarousel';
+import { useDrawerMotion } from '@/hooks/useDrawerMotion';
+import { prefetchPlatformAssets } from '@/lib/platformCatalog';
 import TransactionItem from '@/components/TransactionItem';
 import TransferModal from '@/components/TransferModal';
 import EditTransactionSheet from '@/components/EditTransactionSheet';
@@ -42,23 +44,16 @@ export default function DashboardPage() {
   const [hideTabungan, setHideTabungan] = useState(false);
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
   const [subBalanceCard, setSubBalanceCard] = useState<WalletType | null>(null);
-  // Panel di-mount dulu dalam posisi closed, baru 2 frame kemudian di-open,
-  // supaya transisi slide-down jalan (bukan langsung muncul di posisi akhir).
-  const [renderedSubBalance, setRenderedSubBalance] = useState<WalletType | null>(null);
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  // Drawer digerakkan lewat transform (lihat useDrawerMotion), bukan animasi layout.
+  const drawer = useDrawerMotion<WalletType>(subBalanceCard);
+
+  // Panaskan cache icon/warna di waktu idle supaya drawer tidak decode SVG saat animasi.
   useEffect(() => {
-    if (subBalanceCard) {
-      setRenderedSubBalance(subBalanceCard);
-      let raf2 = 0;
-      const raf1 = requestAnimationFrame(() => {
-        raf2 = requestAnimationFrame(() => setDrawerOpen(true));
-      });
-      return () => { cancelAnimationFrame(raf1); cancelAnimationFrame(raf2); };
-    }
-    setDrawerOpen(false);
-    const t = setTimeout(() => setRenderedSubBalance(null), 400);
-    return () => clearTimeout(t);
-  }, [subBalanceCard]);
+    const slugs = wallet.subBalances.map((s) => s.platformSlug);
+    if (!slugs.length) return;
+    const idle = window.requestIdleCallback ?? ((cb: () => void) => window.setTimeout(cb, 200));
+    idle(() => prefetchPlatformAssets(slugs));
+  }, [wallet.subBalances]);
 
   // Dropdown titik tiga & mode edit nominal per card
   const [menuOpen, setMenuOpen] = useState(false);
@@ -278,12 +273,15 @@ export default function DashboardPage() {
       {/* RINCIAN SALDO — drawer yang "ditarik keluar" dari belakang card saldo:
           posisi ketumpuk di bawah carousel (negative margin), card saldo tetap
           di atasnya (z-index lebih tinggi), jadi kelihatan kaya desk pull-out. */}
-      <div className={`subbalance-collapse ${drawerOpen ? 'is-open' : ''}`}>
+      <div ref={drawer.collapseRef} className={`subbalance-collapse${drawer.shown ? ' is-mounted' : ''}`}>
         <div className="subbalance-panel-outer">
-          {renderedSubBalance && <SubBalancePanel wallet={renderedSubBalance} />}
+          <div ref={drawer.slideRef} className="subbalance-slide">
+            {drawer.shown && <SubBalancePanel wallet={drawer.shown} />}
+          </div>
         </div>
       </div>
 
+      <div ref={drawer.belowRef} className="home-below">
       <section className="saldo-meta">
         {/* Dot indicators */}
         <div className={`saldo-dots ${carousel.running ? 'is-running' : ''}`}>
@@ -369,6 +367,7 @@ export default function DashboardPage() {
       </section>
 
       <div style={{ height: 24 }} />
+      </div>
 
       {showTransfer && (
         <TransferModal onClose={() => setShowTransfer(false)} />

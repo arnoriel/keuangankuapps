@@ -5,7 +5,7 @@ import {
 } from './types';
 import { toLocalDateStr } from './utils';
 import {
-  ensureCashCard, addSubCard, removeSubCard, reallocateSubBalance,
+  ensureCashCard, addSubCard, removeSubCard, reallocateSubBalance, setSubCardAccount,
   cashSubCardId, resetToCash,
 } from './subBalance';
 
@@ -358,9 +358,15 @@ export function transferFunds(
 
 // ─── SUB-CARD (BREAKDOWN SALDO PEGANGAN/TABUNGAN) ──────────────────────────
 
-export function addSubBalanceCard(wallet: WalletType, platformSlug: string): AppState {
+export function addSubBalanceCard(wallet: WalletType, platformSlug: string, accountNumber?: string): AppState {
   const state = getState();
-  const { state: next } = addSubCard(state, wallet, platformSlug);
+  const { state: next } = addSubCard(state, wallet, platformSlug, accountNumber);
+  setState(next);
+  return next;
+}
+
+export function updateSubBalanceAccount(subCardId: string, accountNumber: string): AppState {
+  const next = setSubCardAccount(getState(), subCardId, accountNumber);
   setState(next);
   return next;
 }

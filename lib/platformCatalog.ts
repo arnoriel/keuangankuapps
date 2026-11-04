@@ -48,15 +48,34 @@ export function getPlatformIconUrl(slug: string): string | null {
 }
 
 /** Markup SVG asli (support currentColor/theming) — dipakai lewat inline render, bukan <img>. */
+const markupCache = new Map<string, string | null>();
+
+/** Baca cache sinkron: undefined = belum pernah dimuat. Dipakai supaya render pertama tanpa flicker/setState async. */
+export function peekPlatformIconMarkup(slug: string): string | null | undefined {
+  return markupCache.get(slug);
+}
+
+export function peekPlatformBrandColor(slug: string): BrandColor | null | undefined {
+  return slug === 'cash' ? CASH_COLOR : colorCache.get(slug);
+}
+
 export async function getPlatformIconMarkup(slug: string): Promise<string | null> {
   if (slug === 'cash') return null;
+  if (markupCache.has(slug)) return markupCache.get(slug) ?? null;
   if (!getPlatformOption(slug)) return null;
   try {
     const logo = await getLogo(slug);
-    return logo?.svg ?? null;
+    const svg = logo?.svg ?? null;
+    markupCache.set(slug, svg);
+    return svg;
   } catch {
     return null;
   }
+}
+
+/** Panaskan cache icon + warna brand di waktu idle, sebelum drawer dibuka. */
+export function prefetchPlatformAssets(slugs: string[]): void {
+  for (const slug of new Set(slugs)) void getPlatformBrandColor(slug);
 }
 
 export { CASH_OPTION };

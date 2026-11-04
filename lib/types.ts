@@ -28,6 +28,8 @@ export interface SubBalance {
   platformCategory: PlatformCategory;
   label: string;
   amount: number;
+  /** Opsional: nomor HP (e-wallet) atau nomor rekening (bank). Hanya digit. */
+  accountNumber?: string;
   createdAt: string;
 }
 
